@@ -564,10 +564,10 @@ async function renderPDF(doc, data, projections, charts) {
   const phaseWidth = timelineWidth / 3; // Divide by 3 to get 4 points
   
   const phases = [
-    { name: 'Accumulation\nPhase', desc: 'Building wealth through consistent saving and investing' },
-    { name: 'Retirement\nPlanning', desc: 'Optimizing strategy 5 years before retirement' },
-    { name: 'Distribution\nPhase', desc: 'Managing withdrawals during retirement years' },
-    { name: 'Wealth\nTransfer', desc: 'Passing assets to beneficiaries efficiently' }
+    { name: 'Accumulation\nPhase', desc: 'Building wealth through saving and investing' },
+    { name: 'Retirement\nPlanning', desc: 'Optimizing strategy before retirement' },
+    { name: 'Distribution\nPhase', desc: 'Managing withdrawals during retirement' },
+    { name: 'Wealth\nTransfer', desc: 'Passing assets to beneficiaries' }
   ];
   
   // Draw main timeline line (stops at last phase)
@@ -582,10 +582,10 @@ async function renderPDF(doc, data, projections, charts) {
     // Phase name (bold, 14pt - much bigger and more obvious)
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 15, { width: 90, align: 'center' });
     
-    // Phase description (10pt, gray - bigger than before)
+    // Phase description (10pt, gray - bigger than before, shortened text)
     doc.fontSize(10).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 45, { width: 110, align: 'center' });
   });
-  yPos += 90; // More space needed for bigger text
+  yPos += 120; // Much more space needed for bigger text and to prevent overlap
   
   // 4. RETIREMENT GRAPH (3-layer area chart only)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
