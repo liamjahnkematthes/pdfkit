@@ -503,7 +503,7 @@ async function renderPDF(doc, data, projections, charts) {
   // 1. TOP BRANDING - Logos on both sides + company name and title
   try {
     // Add E.H. Howard logo on LEFT side
-    const logoResponse = await axios.get('https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=61556220746066', { responseType: 'arraybuffer' });
+    const logoResponse = await axios.get('https://media.licdn.com/dms/image/v2/D4E03AQHNi-MkmqCYNw/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1708364083911?e=2147483647&v=beta&t=kHRmVIEFKZKav5KHFRzOpnasZAVCV0isvaaPbGG2Qvs', { responseType: 'arraybuffer' });
     const logoBuffer = Buffer.from(logoResponse.data);
     const logoWidth = 50;
     doc.image(logoBuffer, margin, 30, { width: logoWidth });
