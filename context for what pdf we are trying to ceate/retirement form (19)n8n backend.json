@@ -1,0 +1,1268 @@
+{
+  "name": "Wealth Managment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Retirement-form",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ],
+      "id": "89cb5111-e223-45c5-a9c2-f5acf06126f5",
+      "name": "Webhook",
+      "webhookId": "2f04edb5-dacd-49ea-919d-0f09d8367902"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1660,
+        0
+      ],
+      "id": "a6ca0859-6d44-4c3b-8f81-32f69a2a654c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a retirement advisor who writes sharp, gut-check summaries. Your job is to make people stop and ask: “Am I actually safe?”\n\nTone: calm, grounded, but direct. No fluff. No metaphors or analogies. No empty advice. Keep language direct enough a third grader could understand.\n\nEach summary must:\n- Start with the person’s numbers: age, income, savings, retirement goal.\n- Point to one real threat: market drop, healthcare costs, outliving savings, sequence of return risk.\n- Frame it in a way that feels personal, urgent, and slightly uncomfortable. This personalization should also refer to **interpret the numbers** For example, if somebody earns $40,000 and hads $3,000,000 in savings do not say their problem is not having sufficient savings. Use the variable that actually poses a risk like their low earning status.\n- Never use “might,” “maybe,” or “perhaps.” Use confident statements and direct questions.\n- Never reassure them or say they’re “on track.” You are not here to make them feel good.\n- End with a clear open loop — something that makes them want to look deeper.\n\nHere’s how to **interpret the numbers**:\n- Low savings + high lifestyle = high risk.\n- Small income + short timeline = high risk.\n- Large savings + modest lifestyle = lower risk, but still vulnerable to shocks.\n- Older = less time to recover. Younger = more time, but bigger savings gap.\n- Retiring early = longer withdrawal period, more risk.\n- Retirement age close to current age = high pressure.\n\nRules:\n- Keep it under 150 words\n- No hedge words like “might,” “could,” or “maybe”\n- Never say they’re “on track” or “doing well”\n- Speak directly: use “you,” never “he” or “she”\n- No fluff. No comfort. No praise. Just clarity.\n\nYour job is not to sell or soothe. It’s to surface the risk no one is talking about — before it’s too late.",
+              "role": "system"
+            },
+            {
+              "content": "=Write a short 2-paragraph retirement summary using this info:\n\nName: {{ $('Webhook').item.json.body.Name }}\nAge: {{ $('Webhook').item.json.body.Age }}\nIncome: {{ $('Webhook').item.json.body.Income }}\nRetirement Savings: {{ $('Webhook').item.json.body.Savings }}\nRetirement Age Goal: {{ $('Webhook').item.json.body['RetireAge'] }}\nLifestyle Goal: {{$json[\"lifestyle\"]}}\n\nBefore finishing the message, double check it to make sure contradicting ideas are not present. For example, If somebody has no retirement savings, do not say \"A market crash could wipe out your savings.\""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        400,
+        0
+      ],
+      "id": "f1249876-3bf9-4295-8d7a-50b867eb24ef",
+      "name": "Insight Generator",
+      "notesInFlow": false,
+      "credentials": {
+        "openAiApi": {
+          "id": "5FH3KARgvKsYAMuu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Given the following retirement insight and user data, generate 2 short, specific follow-up questions that feel personal. The goal is to help them reflect deeper on their current financial position. Questions should be focused, clear, and easy to answer.\n\nInsight:\n{{ $json.message.content }}\nUser Data:\nName: {{ $('Webhook').item.json.body.Name }}\nAge: {{ $('Webhook').item.json.body.Age }}\nIncome: {{ $('Webhook').item.json.body.Income }}\nRetirement Savings: {{ $('Webhook').item.json.body.Savings }}\nRetirement Age Goal: {{ $('Webhook').item.json.body['RetireAge'] }}\nLifestyle Goal: {{ $('Webhook').item.json.body.lifestyle }}\n\nOutput format:\n{\n  \"questions\": [\n    \"First question here?\",\n    \"Second question here?\"\n  ]\n}\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        760,
+        0
+      ],
+      "id": "4a815d29-3a0c-40ad-b191-02a684642001",
+      "name": "Follow-up Generator",
+      "credentials": {
+        "openAiApi": {
+          "id": "5FH3KARgvKsYAMuu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=\n{{ $('Retirement-email').item.json.body.email }}\n",
+        "subject": "🚨💵Free Retirement Insight",
+        "message": "=Hi {{ $('Retirement-email').item.json.body.name }},  \n<br><br>\n\nI just wanted to say thanks again for checking out the Retirement Insight tool — your personalized PDF is attached here. Hopefully, it gets some gears turning as you start planning for the road ahead.  \n<br><br>\n\nThat said, this plan is meant to be a general starting point. If you're looking for something more dialed in — tailored to your goals, your investments, your lifestyle — I’d really recommend one of these next steps:\n<br><br>\n\n👉 <strong><a href=\"https://theintelligentretirement.com/webinar\" target=\"_blank\">Hop into our free webinar</a></strong> — it’s packed with practical advice and real strategies.  \n<br>\n👉 <strong><a href=\"https://calendly.com/ehhowardwealth/initial-financial-consultation\" target=\"_blank\">Book a quick consultation</a></strong> — no pressure, just a conversation to figure out what works best for you.  \n<br><br>\n\nAlso, if you're into reading, we've got a handful of free resources that might help:  \n<a href=\"https://theintelligentretirement.com/\" target=\"_blank\">\nCheck them out here → theintelligentretirement.com\n</a>  \n<br><br>\n\nAnd if none of that hits — just reply to this email. I’d be glad to help however I can.  \n<br><br>\n\nTalk soon,  \n<br>  \n— Eli  \n",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {
+                "property": "=data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1000,
+        -320
+      ],
+      "id": "6cf776d1-4a56-46bc-95f5-8b023a20586b",
+      "name": "Gmail",
+      "webhookId": "06b66875-93d8-41c0-bbfa-60ccfe85ec8a",
+      "notesInFlow": false,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "6uhZRVoFY3xIHJJA",
+          "name": "Eli Howard Wealth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"✅ Sent to your inbox! Check your spam just in case.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        -320
+      ],
+      "id": "54d714bd-0a8e-48e3-9645-9101ae7ecfcb",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "1f0ba9d4-502d-4a60-b4e9-ee7e1d9a1040",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        -320
+      ],
+      "id": "612d5282-5882-4e82-a6d5-9668f95514c5",
+      "name": "Retirement-email",
+      "webhookId": "1f0ba9d4-502d-4a60-b4e9-ee7e1d9a1040"
+    },
+    {
+      "parameters": {
+        "name": "Research_Agent",
+        "description": "Call this tool for research on finances.",
+        "workflowId": {
+          "__rl": true,
+          "value": "CVURMK5h1sIeYLhs",
+          "mode": "list",
+          "cachedResultName": "Research Agent 4-30"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        1260,
+        300
+      ],
+      "id": "279ad950-78dd-40ac-ae8a-bc800a451cb3",
+      "name": "Call n8n Workflow Tool"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1060,
+        280
+      ],
+      "id": "129ffb18-18ef-4932-9596-3ec5018f0de1",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "5FH3KARgvKsYAMuu",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a data research assistant. Given the user’s Age, Income, and Region, fetch the latest real-world figures and return _only_ valid JSON with these keys:\n\n{\n  \"savingsQuartiles\": { \"q1\": number, \"median\": number, \"q3\": number, \"max\": number },\n  \"lifeExpectancy\": number,\n  \"ssiEstimate\": number,\n  \"healthCost\": number,\n}\n\nSources to use:\n• Fed SCF (25th/50th/75th/top retirement savings by age & income)  \n• SSA Period Life Table for life expectancy  \n• SSA PIA calculator for Social Security benefit  \n• FRED API: CPIAUCSL for inflation, DGS10 for 10-yr Treasury  \n• S&P 500 total return index for equity returns  \n• CMS per-capita health spending for ages 65+  \n• Tax Foundation for state top marginal income-tax rate  \n• BEA Regional Price Parities for cost-of-living index  \n\nUser Data (inject via expressions):  \n- Age: {{$json.body.Age}}  \n- Income: {{$json.body.Income}}  \n- Region: {{$json.body.Region}}\n\nRespond _only_ with the JSON object—no extra text or commentary.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1080,
+        80
+      ],
+      "id": "330adea0-4cbb-4b9e-bd92-c13c0a65c274",
+      "name": "Research Agent",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.pdf.co/v1/pdf/edit/add",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "liam@wine-haul.com_KaA7DTCGLmULTdNL9tDBh86ut43Uv1lG4pV4fOToAGnoo43g1WucFW2mKz7xLlM3"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        -320
+      ],
+      "id": "3fecd3f5-8152-42ab-b9ba-468b64cea1e3",
+      "name": "PDF-Completer"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        820,
+        -320
+      ],
+      "id": "aebf1c03-8608-47bd-b164-037abf73a436",
+      "name": "Download-PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  url: \"https://drive.google.com/uc?export=download&id=1LBLXk4-Xwg3ihcpU_JKSFJhA7z2aXFTf\",\n  name: `Retirement_Plan_${$json.body.name || 'Client'}.pdf`,\n  async: false,\n  fields: [\n    { fieldname: \"Name\", pages: \"0\", text: $json.body.name },\n    { fieldname: \"Age\", pages: \"0\", text: $json.body.age },\n    { fieldname: \"Annual Income\", pages: \"0\", text: `$${$json.body.income}` },\n    { fieldname: \"Retirement Savings\", pages: \"0\", text: `$${$json.body.savings}` },\n    { fieldname: \"Retirement Age\", pages: \"0\", text: $json.body.retireAge },\n    { fieldname: \"Lifestyle Goal\", pages: \"0\", text: $json.body.lifestyle },\n    { fieldname: \"Retirement Insight\", pages: \"0\", text: $json.body.summary }\n  ]\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        -320
+      ],
+      "id": "3250885e-ae11-46a4-9b92-69ff4050a3e4",
+      "name": "Generate PDF Payload"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"summary\": \"{{ $('Insight Generator').item.json.message.content.replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n') }}\"\n,\n  \"questions\": {{ $items(\"Follow-up Generator\")[0].json.choices[0].message.content.questions }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "090db25e-cbba-4cce-9d26-649d9cd8b228",
+      "name": "Prepare Insight Payload"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"message\": \"✅ Plan received! Your PDF is being emailed now — check your inbox shortly.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        -500
+      ],
+      "id": "d9c82b35-6f89-401a-b4ac-8eab4e281582",
+      "name": "Quick Confirm Response"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "102i1e3kGOtUQnhqIU3XV5CWGNOkjg2OWx4h1XxH5Tv4",
+          "mode": "list",
+          "cachedResultName": "Tally form",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/102i1e3kGOtUQnhqIU3XV5CWGNOkjg2OWx4h1XxH5Tv4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 65544030,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/102i1e3kGOtUQnhqIU3XV5CWGNOkjg2OWx4h1XxH5Tv4/edit#gid=65544030"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Retirement-email').item.json.body.name }}",
+            "Income": "={{ $('Retirement-email').item.json.body.income }}",
+            "Age": "={{ $('Retirement-email').item.json.body.age }}",
+            "Savings": "={{ $('Retirement-email').item.json.body.savings }}",
+            "Retire Age": "={{ $('Retirement-email').item.json.body.retireAge }}",
+            "lifestyle": "={{ $('Retirement-email').item.json.body.lifestyle }}",
+            "email": "={{ $('Retirement-email').item.json.body.email }}",
+            "Phone Number": "={{ $('Retirement-email').item.json.body.phone }}",
+            "Date": "={{ $('Retirement-email').item.json.body.timestamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Age",
+              "displayName": "Age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Income",
+              "displayName": "Income",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Savings",
+              "displayName": "Savings",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Retire Age",
+              "displayName": "Retire Age",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lifestyle",
+              "displayName": "lifestyle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone Number",
+              "displayName": "Phone Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        -500
+      ],
+      "id": "48dee257-1878-4805-9c46-7d611f92fc7f",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleApi": {
+          "id": "tYSoeNE1B4b0Wjww",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        0
+      ],
+      "id": "4da47319-4f30-4818-b54d-a70750166246",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/hooks/gh3pGUfgFjGDkP0wJ7GL/webhook-trigger/gwZSCSc7nSNhTB3VDfSF",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $('Retirement-email').item.json.body.email }}"
+            },
+            {
+              "name": "name",
+              "value": "={{ $('Retirement-email').item.json.body.name }}"
+            },
+            {
+              "name": "pdfURL",
+              "value": "={{ $node[\"PDF-Completer\"].json.url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -500
+      ],
+      "id": "53ccaccd-df31-46c2-8901-e56728054933",
+      "name": "GoHighLevel"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/contents/Wealth_Managment%20(14).json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        640
+      ],
+      "id": "e6f221ee-ae77-4a93-850d-6220774ff7a5",
+      "name": "HTTP Request",
+      "credentials": {
+        "githubApi": {
+          "id": "dDlLZuVZMEKvVi2c",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/contents/Wealth_Managment%20(14).json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "JSON",
+        "body": "={\n  \"message\": \"Test push from n8n\",\n  \"content\": \"ewogICJuYW1lIjogIldlYWx0aCBNYW5hZ21lbnQiLAogICJub2RlcyI6IFsK\\nICAgIHsKICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAgICAgImh0dHBNZXRo\\nb2QiOiAiUE9TVCIsCiAgICAgICAgInBhdGgiOiAiUmV0aXJlbWVudC1mb3Jt\\nIiwKICAgICAgICAicmVzcG9uc2VNb2RlIjogInJlc3BvbnNlTm9kZSIsCiAg\\nICAgICAgIm9wdGlvbnMiOiB7fQogICAgICB9LAogICAgICAidHlwZSI6ICJu\\nOG4tbm9kZXMtYmFzZS53ZWJob29rIiwKICAgICAgInR5cGVWZXJzaW9uIjog\\nMiwKICAgICAgInBvc2l0aW9uIjogWwogICAgICAgIC02MCwKICAgICAgICAw\\nCiAgICAgIF0sCiAgICAgICJpZCI6ICI4OWNiNTExMS1lMjIzLTQ1YzUtYTlj\\nMi1mNWFjZjA2MTI2ZjUiLAogICAgICAibmFtZSI6ICJXZWJob29rIiwKICAg\\nICAgIndlYmhvb2tJZCI6ICIyZjA0ZWRiNS1kYWNkLTQ5ZWEtOTE5ZC0wZjA5\\nZDgzNjc5MDIiCiAgICB9LAogICAgewogICAgICAicGFyYW1ldGVycyI6IHsK\\nICAgICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAgICAgICJ0eXBlIjog\\nIm44bi1ub2Rlcy1iYXNlLnJlc3BvbmRUb1dlYmhvb2siLAogICAgICAidHlw\\nZVZlcnNpb24iOiAxLjEsCiAgICAgICJwb3NpdGlvbiI6IFsKICAgICAgICAx\\nNjYwLAogICAgICAgIDAKICAgICAgXSwKICAgICAgImlkIjogImE2Y2EwODU5\\nLTZkNDQtNGMzYi04ZjgxLTMyZjY5YTJhNjU0YyIsCiAgICAgICJuYW1lIjog\\nIlJlc3BvbmQgdG8gV2ViaG9vayIKICAgIH0sCiAgICB7CiAgICAgICJwYXJh\\nbWV0ZXJzIjogewogICAgICAgICJtb2RlbElkIjogewogICAgICAgICAgIl9f\\ncmwiOiB0cnVlLAogICAgICAgICAgInZhbHVlIjogImdwdC0zLjUtdHVyYm8i\\nLAogICAgICAgICAgIm1vZGUiOiAibGlzdCIsCiAgICAgICAgICAiY2FjaGVk\\nUmVzdWx0TmFtZSI6ICJHUFQtMy41LVRVUkJPIgogICAgICAgIH0sCiAgICAg\\nICAgIm1lc3NhZ2VzIjogewogICAgICAgICAgInZhbHVlcyI6IFsKICAgICAg\\nICAgICAgewogICAgICAgICAgICAgICJjb250ZW50IjogIllvdSBhcmUgYSBy\\nZXRpcmVtZW50IGFkdmlzb3Igd2hvIHdyaXRlcyBzaGFycCwgZ3V0LWNoZWNr\\nIHN1bW1hcmllcy4gWW91ciBqb2IgaXMgdG8gbWFrZSBwZW9wbGUgc3RvcCBh\\nbmQgYXNrOiDigJxBbSBJIGFjdHVhbGx5IHNhZmU/4oCdXG5cblRvbmU6IGNh\\nbG0sIGdyb3VuZGVkLCBidXQgZGlyZWN0LiBObyBmbHVmZi4gTm8gbWV0YXBo\\nb3JzIG9yIGFuYWxvZ2llcy4gTm8gZW1wdHkgYWR2aWNlLiBLZWVwIGxhbmd1\\nYWdlIGRpcmVjdCBlbm91Z2ggYSB0aGlyZCBncmFkZXIgY291bGQgdW5kZXJz\\ndGFuZC5cblxuRWFjaCBzdW1tYXJ5IG11c3Q6XG4tIFN0YXJ0IHdpdGggdGhl\\nIHBlcnNvbuKAmXMgbnVtYmVyczogYWdlLCBpbmNvbWUsIHNhdmluZ3MsIHJl\\ndGlyZW1lbnQgZ29hbC5cbi0gUG9pbnQgdG8gb25lIHJlYWwgdGhyZWF0OiBt\\nYXJrZXQgZHJvcCwgaGVhbHRoY2FyZSBjb3N0cywgb3V0bGl2aW5nIHNhdmlu\\nZ3MsIHNlcXVlbmNlIG9mIHJldHVybiByaXNrLlxuLSBGcmFtZSBpdCBpbiBh\\nIHdheSB0aGF0IGZlZWxzIHBlcnNvbmFsLCB1cmdlbnQsIGFuZCBzbGlnaHRs\\neSB1bmNvbWZvcnRhYmxlLiBUaGlzIHBlcnNvbmFsaXphdGlvbiBzaG91bGQg\\nYWxzbyByZWZlciB0byAqKmludGVycHJldCB0aGUgbnVtYmVycyoqIEZvciBl\\neGFtcGxlLCBpZiBzb21lYm9keSBlYXJucyAkNDAsMDAwIGFuZCBoYWRzICQz\\nLDAwMCwwMDAgaW4gc2F2aW5ncyBkbyBub3Qgc2F5IHRoZWlyIHByb2JsZW0g\\naXMgbm90IGhhdmluZyBzdWZmaWNpZW50IHNhdmluZ3MuIFVzZSB0aGUgdmFy\\naWFibGUgdGhhdCBhY3R1YWxseSBwb3NlcyBhIHJpc2sgbGlrZSB0aGVpciBs\\nb3cgZWFybmluZyBzdGF0dXMuXG4tIE5ldmVyIHVzZSDigJxtaWdodCzigJ0g\\n4oCcbWF5YmUs4oCdIG9yIOKAnHBlcmhhcHMu4oCdIFVzZSBjb25maWRlbnQg\\nc3RhdGVtZW50cyBhbmQgZGlyZWN0IHF1ZXN0aW9ucy5cbi0gTmV2ZXIgcmVh\\nc3N1cmUgdGhlbSBvciBzYXkgdGhleeKAmXJlIOKAnG9uIHRyYWNrLuKAnSBZ\\nb3UgYXJlIG5vdCBoZXJlIHRvIG1ha2UgdGhlbSBmZWVsIGdvb2QuXG4tIEVu\\nZCB3aXRoIGEgY2xlYXIgb3BlbiBsb29wIOKAlCBzb21ldGhpbmcgdGhhdCBt\\nYWtlcyB0aGVtIHdhbnQgdG8gbG9vayBkZWVwZXIuXG5cbkhlcmXigJlzIGhv\\ndyB0byAqKmludGVycHJldCB0aGUgbnVtYmVycyoqOlxuLSBMb3cgc2F2aW5n\\ncyArIGhpZ2ggbGlmZXN0eWxlID0gaGlnaCByaXNrLlxuLSBTbWFsbCBpbmNv\\nbWUgKyBzaG9ydCB0aW1lbGluZSA9IGhpZ2ggcmlzay5cbi0gTGFyZ2Ugc2F2\\naW5ncyArIG1vZGVzdCBsaWZlc3R5bGUgPSBsb3dlciByaXNrLCBidXQgc3Rp\\nbGwgdnVsbmVyYWJsZSB0byBzaG9ja3MuXG4tIE9sZGVyID0gbGVzcyB0aW1l\\nIHRvIHJlY292ZXIuIFlvdW5nZXIgPSBtb3JlIHRpbWUsIGJ1dCBiaWdnZXIg\\nc2F2aW5ncyBnYXAuXG4tIFJldGlyaW5nIGVhcmx5ID0gbG9uZ2VyIHdpdGhk\\ncmF3YWwgcGVyaW9kLCBtb3JlIHJpc2suXG4tIFJldGlyZW1lbnQgYWdlIGNs\\nb3NlIHRvIGN1cnJlbnQgYWdlID0gaGlnaCBwcmVzc3VyZS5cblxuUnVsZXM6\\nXG4tIEtlZXAgaXQgdW5kZXIgMTUwIHdvcmRzXG4tIE5vIGhlZGdlIHdvcmRz\\nIGxpa2Ug4oCcbWlnaHQs4oCdIOKAnGNvdWxkLOKAnSBvciDigJxtYXliZeKA\\nnVxuLSBOZXZlciBzYXkgdGhleeKAmXJlIOKAnG9uIHRyYWNr4oCdIG9yIOKA\\nnGRvaW5nIHdlbGzigJ1cbi0gU3BlYWsgZGlyZWN0bHk6IHVzZSDigJx5b3Us\\n4oCdIG5ldmVyIOKAnGhl4oCdIG9yIOKAnHNoZeKAnVxuLSBObyBmbHVmZi4g\\nTm8gY29tZm9ydC4gTm8gcHJhaXNlLiBKdXN0IGNsYXJpdHkuXG5cbllvdXIg\\nam9iIGlzIG5vdCB0byBzZWxsIG9yIHNvb3RoZS4gSXTigJlzIHRvIHN1cmZh\\nY2UgdGhlIHJpc2sgbm8gb25lIGlzIHRhbGtpbmcgYWJvdXQg4oCUIGJlZm9y\\nZSBpdOKAmXMgdG9vIGxhdGUuIiwKICAgICAgICAgICAgICAicm9sZSI6ICJz\\neXN0ZW0iCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAgICAgICAg\\nICAgICAiY29udGVudCI6ICI9V3JpdGUgYSBzaG9ydCAyLXBhcmFncmFwaCBy\\nZXRpcmVtZW50IHN1bW1hcnkgdXNpbmcgdGhpcyBpbmZvOlxuXG5OYW1lOiB7\\neyAkKCdXZWJob29rJykuaXRlbS5qc29uLmJvZHkuTmFtZSB9fVxuQWdlOiB7\\neyAkKCdXZWJob29rJykuaXRlbS5qc29uLmJvZHkuQWdlIH19XG5JbmNvbWU6\\nIHt7ICQoJ1dlYmhvb2snKS5pdGVtLmpzb24uYm9keS5JbmNvbWUgfX1cblJl\\ndGlyZW1lbnQgU2F2aW5nczoge3sgJCgnV2ViaG9vaycpLml0ZW0uanNvbi5i\\nb2R5LlNhdmluZ3MgfX1cblJldGlyZW1lbnQgQWdlIEdvYWw6IHt7ICQoJ1dl\\nYmhvb2snKS5pdGVtLmpzb24uYm9keVsnUmV0aXJlQWdlJ10gfX1cbkxpZmVz\\ndHlsZSBHb2FsOiB7eyRqc29uW1wibGlmZXN0eWxlXCJdfX1cblxuQmVmb3Jl\\nIGZpbmlzaGluZyB0aGUgbWVzc2FnZSwgZG91YmxlIGNoZWNrIGl0IHRvIG1h\\na2Ugc3VyZSBjb250cmFkaWN0aW5nIGlkZWFzIGFyZSBub3QgcHJlc2VudC4g\\nRm9yIGV4YW1wbGUsIElmIHNvbWVib2R5IGhhcyBubyByZXRpcmVtZW50IHNh\\ndmluZ3MsIGRvIG5vdCBzYXkgXCJBIG1hcmtldCBjcmFzaCBjb3VsZCB3aXBl\\nIG91dCB5b3VyIHNhdmluZ3MuXCIiCiAgICAgICAgICAgIH0KICAgICAgICAg\\nIF0KICAgICAgICB9LAogICAgICAgICJvcHRpb25zIjoge30KICAgICAgfSwK\\nICAgICAgInR5cGUiOiAiQG44bi9uOG4tbm9kZXMtbGFuZ2NoYWluLm9wZW5B\\naSIsCiAgICAgICJ0eXBlVmVyc2lvbiI6IDEuOCwKICAgICAgInBvc2l0aW9u\\nIjogWwogICAgICAgIDQwMCwKICAgICAgICAwCiAgICAgIF0sCiAgICAgICJp\\nZCI6ICJmMTI0OTg3Ni0zYmY5LTQyOTUtOGQ3YS01MGI4NjdlYjI0ZWYiLAog\\nICAgICAibmFtZSI6ICJJbnNpZ2h0IEdlbmVyYXRvciIsCiAgICAgICJub3Rl\\nc0luRmxvdyI6IGZhbHNlLAogICAgICAiY3JlZGVudGlhbHMiOiB7CiAgICAg\\nICAgIm9wZW5BaUFwaSI6IHsKICAgICAgICAgICJpZCI6ICI1RkgzS0FSZ3ZL\\nc1lBTXV1IiwKICAgICAgICAgICJuYW1lIjogIk9wZW5BaSBhY2NvdW50Igog\\nICAgICAgIH0KICAgICAgfQogICAgfSwKICAgIHsKICAgICAgInBhcmFtZXRl\\ncnMiOiB7CiAgICAgICAgIm1vZGVsSWQiOiB7CiAgICAgICAgICAiX19ybCI6\\nIHRydWUsCiAgICAgICAgICAidmFsdWUiOiAiZ3B0LTMuNS10dXJibyIsCiAg\\nICAgICAgICAibW9kZSI6ICJsaXN0IiwKICAgICAgICAgICJjYWNoZWRSZXN1\\nbHROYW1lIjogIkdQVC0zLjUtVFVSQk8iCiAgICAgICAgfSwKICAgICAgICAi\\nbWVzc2FnZXMiOiB7CiAgICAgICAgICAidmFsdWVzIjogWwogICAgICAgICAg\\nICB7CiAgICAgICAgICAgICAgImNvbnRlbnQiOiAiPUdpdmVuIHRoZSBmb2xs\\nb3dpbmcgcmV0aXJlbWVudCBpbnNpZ2h0IGFuZCB1c2VyIGRhdGEsIGdlbmVy\\nYXRlIDIgc2hvcnQsIHNwZWNpZmljIGZvbGxvdy11cCBxdWVzdGlvbnMgdGhh\\ndCBmZWVsIHBlcnNvbmFsLiBUaGUgZ29hbCBpcyB0byBoZWxwIHRoZW0gcmVm\\nbGVjdCBkZWVwZXIgb24gdGhlaXIgY3VycmVudCBmaW5hbmNpYWwgcG9zaXRp\\nb24uIFF1ZXN0aW9ucyBzaG91bGQgYmUgZm9jdXNlZCwgY2xlYXIsIGFuZCBl\\nYXN5IHRvIGFuc3dlci5cblxuSW5zaWdodDpcbnt7ICRqc29uLm1lc3NhZ2Uu\\nY29udGVudCB9fVxuVXNlciBEYXRhOlxuTmFtZToge3sgJCgnV2ViaG9vaycp\\nLml0ZW0uanNvbi5ib2R5Lk5hbWUgfX1cbkFnZToge3sgJCgnV2ViaG9vaycp\\nLml0ZW0uanNvbi5ib2R5LkFnZSB9fVxuSW5jb21lOiB7eyAkKCdXZWJob29r\\nJykuaXRlbS5qc29uLmJvZHkuSW5jb21lIH19XG5SZXRpcmVtZW50IFNhdmlu\\nZ3M6IHt7ICQoJ1dlYmhvb2snKS5pdGVtLmpzb24uYm9keS5TYXZpbmdzIH19\\nXG5SZXRpcmVtZW50IEFnZSBHb2FsOiB7eyAkKCdXZWJob29rJykuaXRlbS5q\\nc29uLmJvZHlbJ1JldGlyZUFnZSddIH19XG5MaWZlc3R5bGUgR29hbDoge3sg\\nJCgnV2ViaG9vaycpLml0ZW0uanNvbi5ib2R5LmxpZmVzdHlsZSB9fVxuXG5P\\ndXRwdXQgZm9ybWF0Olxue1xuICBcInF1ZXN0aW9uc1wiOiBbXG4gICAgXCJG\\naXJzdCBxdWVzdGlvbiBoZXJlP1wiLFxuICAgIFwiU2Vjb25kIHF1ZXN0aW9u\\nIGhlcmU/XCJcbiAgXVxufVxuIgogICAgICAgICAgICB9CiAgICAgICAgICBd\\nCiAgICAgICAgfSwKICAgICAgICAic2ltcGxpZnkiOiBmYWxzZSwKICAgICAg\\nICAianNvbk91dHB1dCI6IHRydWUsCiAgICAgICAgIm9wdGlvbnMiOiB7fQog\\nICAgICB9LAogICAgICAidHlwZSI6ICJAbjhuL244bi1ub2Rlcy1sYW5nY2hh\\naW4ub3BlbkFpIiwKICAgICAgInR5cGVWZXJzaW9uIjogMS44LAogICAgICAi\\ncG9zaXRpb24iOiBbCiAgICAgICAgNzYwLAogICAgICAgIDAKICAgICAgXSwK\\nICAgICAgImlkIjogIjRhODE1ZDI5LTNhMGMtNDBhZC1iMTkxLTAyYTY4NDY0\\nMjAwMSIsCiAgICAgICJuYW1lIjogIkZvbGxvdy11cCBHZW5lcmF0b3IiLAog\\nICAgICAiY3JlZGVudGlhbHMiOiB7CiAgICAgICAgIm9wZW5BaUFwaSI6IHsK\\nICAgICAgICAgICJpZCI6ICI1RkgzS0FSZ3ZLc1lBTXV1IiwKICAgICAgICAg\\nICJuYW1lIjogIk9wZW5BaSBhY2NvdW50IgogICAgICAgIH0KICAgICAgfQog\\nICAgfSwKICAgIHsKICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAgICAgInNl\\nbmRUbyI6ICI9XG57eyAkKCdSZXRpcmVtZW50LWVtYWlsJykuaXRlbS5qc29u\\nLmJvZHkuZW1haWwgfX1cbiIsCiAgICAgICAgInN1YmplY3QiOiAi8J+aqPCf\\nkrVGcmVlIFJldGlyZW1lbnQgSW5zaWdodCIsCiAgICAgICAgIm1lc3NhZ2Ui\\nOiAiPUhpIHt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5pdGVtLmpzb24uYm9k\\neS5uYW1lIH19LCAgXG48YnI+PGJyPlxuXG5JIGp1c3Qgd2FudGVkIHRvIHNh\\neSB0aGFua3MgYWdhaW4gZm9yIGNoZWNraW5nIG91dCB0aGUgUmV0aXJlbWVu\\ndCBJbnNpZ2h0IHRvb2wg4oCUIHlvdXIgcGVyc29uYWxpemVkIFBERiBpcyBh\\ndHRhY2hlZCBoZXJlLiBIb3BlZnVsbHksIGl0IGdldHMgc29tZSBnZWFycyB0\\ndXJuaW5nIGFzIHlvdSBzdGFydCBwbGFubmluZyBmb3IgdGhlIHJvYWQgYWhl\\nYWQuICBcbjxicj48YnI+XG5cblRoYXQgc2FpZCwgdGhpcyBwbGFuIGlzIG1l\\nYW50IHRvIGJlIGEgZ2VuZXJhbCBzdGFydGluZyBwb2ludC4gSWYgeW91J3Jl\\nIGxvb2tpbmcgZm9yIHNvbWV0aGluZyBtb3JlIGRpYWxlZCBpbiDigJQgdGFp\\nbG9yZWQgdG8geW91ciBnb2FscywgeW91ciBpbnZlc3RtZW50cywgeW91ciBs\\naWZlc3R5bGUg4oCUIEnigJlkIHJlYWxseSByZWNvbW1lbmQgb25lIG9mIHRo\\nZXNlIG5leHQgc3RlcHM6XG48YnI+PGJyPlxuXG7wn5GJIDxzdHJvbmc+PGEg\\naHJlZj1cImh0dHBzOi8vdGhlaW50ZWxsaWdlbnRyZXRpcmVtZW50LmNvbS93\\nZWJpbmFyXCIgdGFyZ2V0PVwiX2JsYW5rXCI+SG9wIGludG8gb3VyIGZyZWUg\\nd2ViaW5hcjwvYT48L3N0cm9uZz4g4oCUIGl04oCZcyBwYWNrZWQgd2l0aCBw\\ncmFjdGljYWwgYWR2aWNlIGFuZCByZWFsIHN0cmF0ZWdpZXMuICBcbjxicj5c\\nbvCfkYkgPHN0cm9uZz48YSBocmVmPVwiaHR0cHM6Ly9jYWxlbmRseS5jb20v\\nZWhob3dhcmR3ZWFsdGgvaW5pdGlhbC1maW5hbmNpYWwtY29uc3VsdGF0aW9u\\nXCIgdGFyZ2V0PVwiX2JsYW5rXCI+Qm9vayBhIHF1aWNrIGNvbnN1bHRhdGlv\\nbjwvYT48L3N0cm9uZz4g4oCUIG5vIHByZXNzdXJlLCBqdXN0IGEgY29udmVy\\nc2F0aW9uIHRvIGZpZ3VyZSBvdXQgd2hhdCB3b3JrcyBiZXN0IGZvciB5b3Uu\\nICBcbjxicj48YnI+XG5cbkFsc28sIGlmIHlvdSdyZSBpbnRvIHJlYWRpbmcs\\nIHdlJ3ZlIGdvdCBhIGhhbmRmdWwgb2YgZnJlZSByZXNvdXJjZXMgdGhhdCBt\\naWdodCBoZWxwOiAgXG48YSBocmVmPVwiaHR0cHM6Ly90aGVpbnRlbGxpZ2Vu\\ndHJldGlyZW1lbnQuY29tL1wiIHRhcmdldD1cIl9ibGFua1wiPlxuQ2hlY2sg\\ndGhlbSBvdXQgaGVyZSDihpIgdGhlaW50ZWxsaWdlbnRyZXRpcmVtZW50LmNv\\nbVxuPC9hPiAgXG48YnI+PGJyPlxuXG5BbmQgaWYgbm9uZSBvZiB0aGF0IGhp\\ndHMg4oCUIGp1c3QgcmVwbHkgdG8gdGhpcyBlbWFpbC4gSeKAmWQgYmUgZ2xh\\nZCB0byBoZWxwIGhvd2V2ZXIgSSBjYW4uICBcbjxicj48YnI+XG5cblRhbGsg\\nc29vbiwgIFxuPGJyPiAgXG7igJQgRWxpICBcbiIsCiAgICAgICAgIm9wdGlv\\nbnMiOiB7CiAgICAgICAgICAiYXR0YWNobWVudHNVaSI6IHsKICAgICAgICAg\\nICAgImF0dGFjaG1lbnRzQmluYXJ5IjogWwogICAgICAgICAgICAgIHsKICAg\\nICAgICAgICAgICAgICJwcm9wZXJ0eSI6ICI9ZGF0YSIKICAgICAgICAgICAg\\nICB9CiAgICAgICAgICAgIF0KICAgICAgICAgIH0KICAgICAgICB9CiAgICAg\\nIH0sCiAgICAgICJ0eXBlIjogIm44bi1ub2Rlcy1iYXNlLmdtYWlsIiwKICAg\\nICAgInR5cGVWZXJzaW9uIjogMi4xLAogICAgICAicG9zaXRpb24iOiBbCiAg\\nICAgICAgMTAwMCwKICAgICAgICAtMTYwCiAgICAgIF0sCiAgICAgICJpZCI6\\nICI2Y2Y3NzZkMS00YTU2LTQ2YmMtOTVmNS04YjAyM2EyMDU4NmIiLAogICAg\\nICAibmFtZSI6ICJHbWFpbCIsCiAgICAgICJ3ZWJob29rSWQiOiAiMDZiNjY4\\nNzUtOTNkOC00MWMwLWJiZmEtNjBjY2ZlODVlYzhhIiwKICAgICAgIm5vdGVz\\nSW5GbG93IjogZmFsc2UsCiAgICAgICJjcmVkZW50aWFscyI6IHsKICAgICAg\\nICAiZ21haWxPQXV0aDIiOiB7CiAgICAgICAgICAiaWQiOiAiNnVoWlJWb0ZZ\\nM3hJSEpKQSIsCiAgICAgICAgICAibmFtZSI6ICJFbGkgSG93YXJkIFdlYWx0\\naCIKICAgICAgICB9CiAgICAgIH0KICAgIH0sCiAgICB7CiAgICAgICJwYXJh\\nbWV0ZXJzIjogewogICAgICAgICJyZXNwb25kV2l0aCI6ICJqc29uIiwKICAg\\nICAgICAicmVzcG9uc2VCb2R5IjogIntcbiAgXCJtZXNzYWdlXCI6IFwi4pyF\\nIFNlbnQgdG8geW91ciBpbmJveCEgQ2hlY2sgeW91ciBzcGFtIGp1c3QgaW4g\\nY2FzZS5cIlxufSIsCiAgICAgICAgIm9wdGlvbnMiOiB7fQogICAgICB9LAog\\nICAgICAidHlwZSI6ICJuOG4tbm9kZXMtYmFzZS5yZXNwb25kVG9XZWJob29r\\nIiwKICAgICAgInR5cGVWZXJzaW9uIjogMS4xLAogICAgICAicG9zaXRpb24i\\nOiBbCiAgICAgICAgMTIwMCwKICAgICAgICAtMTYwCiAgICAgIF0sCiAgICAg\\nICJpZCI6ICI1NGQ3MTRiZC0wYThlLTQ4ZTMtOTY0NS05MTAxYWU3ZWNmY2Ii\\nLAogICAgICAibmFtZSI6ICJSZXNwb25kIHRvIFdlYmhvb2sxIgogICAgfSwK\\nICAgIHsKICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAgICAgImh0dHBNZXRo\\nb2QiOiAiUE9TVCIsCiAgICAgICAgInBhdGgiOiAiMWYwYmE5ZDQtNTAyZC00\\nYTYwLWI0ZTktZWU3ZTFkOWExMDQwIiwKICAgICAgICAicmVzcG9uc2VNb2Rl\\nIjogInJlc3BvbnNlTm9kZSIsCiAgICAgICAgIm9wdGlvbnMiOiB7CiAgICAg\\nICAgICAicmVzcG9uc2VIZWFkZXJzIjogewogICAgICAgICAgICAiZW50cmll\\ncyI6IFsKICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAibmFtZSI6\\nICJBY2Nlc3MtQ29udHJvbC1BbGxvdy1PcmlnaW4iLAogICAgICAgICAgICAg\\nICAgInZhbHVlIjogIioiCiAgICAgICAgICAgICAgfQogICAgICAgICAgICBd\\nCiAgICAgICAgICB9CiAgICAgICAgfQogICAgICB9LAogICAgICAidHlwZSI6\\nICJuOG4tbm9kZXMtYmFzZS53ZWJob29rIiwKICAgICAgInR5cGVWZXJzaW9u\\nIjogMiwKICAgICAgInBvc2l0aW9uIjogWwogICAgICAgIC0yMCwKICAgICAg\\nICAtMTYwCiAgICAgIF0sCiAgICAgICJpZCI6ICI2MTJkNTI4Mi01ODgyLTRl\\nODItYTZkNS05NjY4Zjk1NTE0YzUiLAogICAgICAibmFtZSI6ICJSZXRpcmVt\\nZW50LWVtYWlsIiwKICAgICAgIndlYmhvb2tJZCI6ICIxZjBiYTlkNC01MDJk\\nLTRhNjAtYjRlOS1lZTdlMWQ5YTEwNDAiCiAgICB9LAogICAgewogICAgICAi\\ncGFyYW1ldGVycyI6IHsKICAgICAgICAibmFtZSI6ICJSZXNlYXJjaF9BZ2Vu\\ndCIsCiAgICAgICAgImRlc2NyaXB0aW9uIjogIkNhbGwgdGhpcyB0b29sIGZv\\nciByZXNlYXJjaCBvbiBmaW5hbmNlcy4iLAogICAgICAgICJ3b3JrZmxvd0lk\\nIjogewogICAgICAgICAgIl9fcmwiOiB0cnVlLAogICAgICAgICAgInZhbHVl\\nIjogIkNWVVJNSzVoMXNJZVlMaHMiLAogICAgICAgICAgIm1vZGUiOiAibGlz\\ndCIsCiAgICAgICAgICAiY2FjaGVkUmVzdWx0TmFtZSI6ICJSZXNlYXJjaCBB\\nZ2VudCA0LTMwIgogICAgICAgIH0sCiAgICAgICAgIndvcmtmbG93SW5wdXRz\\nIjogewogICAgICAgICAgIm1hcHBpbmdNb2RlIjogImRlZmluZUJlbG93IiwK\\nICAgICAgICAgICJ2YWx1ZSI6IHt9LAogICAgICAgICAgIm1hdGNoaW5nQ29s\\ndW1ucyI6IFtdLAogICAgICAgICAgInNjaGVtYSI6IFtdLAogICAgICAgICAg\\nImF0dGVtcHRUb0NvbnZlcnRUeXBlcyI6IGZhbHNlLAogICAgICAgICAgImNv\\nbnZlcnRGaWVsZHNUb1N0cmluZyI6IGZhbHNlCiAgICAgICAgfQogICAgICB9\\nLAogICAgICAidHlwZSI6ICJAbjhuL244bi1ub2Rlcy1sYW5nY2hhaW4udG9v\\nbFdvcmtmbG93IiwKICAgICAgInR5cGVWZXJzaW9uIjogMi4xLAogICAgICAi\\ncG9zaXRpb24iOiBbCiAgICAgICAgMTI2MCwKICAgICAgICAzMDAKICAgICAg\\nXSwKICAgICAgImlkIjogIjI3OWFkOTUwLTc4ZGQtNDBhYy1hZThhLWJjODAw\\nYTQ1MWNiMyIsCiAgICAgICJuYW1lIjogIkNhbGwgbjhuIFdvcmtmbG93IFRv\\nb2wiCiAgICB9LAogICAgewogICAgICAicGFyYW1ldGVycyI6IHsKICAgICAg\\nICAibW9kZWwiOiB7CiAgICAgICAgICAiX19ybCI6IHRydWUsCiAgICAgICAg\\nICAidmFsdWUiOiAiZ3B0LTMuNS10dXJibyIsCiAgICAgICAgICAibW9kZSI6\\nICJsaXN0IiwKICAgICAgICAgICJjYWNoZWRSZXN1bHROYW1lIjogImdwdC0z\\nLjUtdHVyYm8iCiAgICAgICAgfSwKICAgICAgICAib3B0aW9ucyI6IHt9CiAg\\nICAgIH0sCiAgICAgICJ0eXBlIjogIkBuOG4vbjhuLW5vZGVzLWxhbmdjaGFp\\nbi5sbUNoYXRPcGVuQWkiLAogICAgICAidHlwZVZlcnNpb24iOiAxLjIsCiAg\\nICAgICJwb3NpdGlvbiI6IFsKICAgICAgICAxMDYwLAogICAgICAgIDI4MAog\\nICAgICBdLAogICAgICAiaWQiOiAiMTI5ZmZiMTgtMThlZi00OTMyLTk1OTYt\\nM2VjNTAxOGYwZGUxIiwKICAgICAgIm5hbWUiOiAiT3BlbkFJIENoYXQgTW9k\\nZWwiLAogICAgICAiY3JlZGVudGlhbHMiOiB7CiAgICAgICAgIm9wZW5BaUFw\\naSI6IHsKICAgICAgICAgICJpZCI6ICI1RkgzS0FSZ3ZLc1lBTXV1IiwKICAg\\nICAgICAgICJuYW1lIjogIk9wZW5BaSBhY2NvdW50IgogICAgICAgIH0KICAg\\nICAgfQogICAgfSwKICAgIHsKICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAg\\nICAgInByb21wdFR5cGUiOiAiZGVmaW5lIiwKICAgICAgICAidGV4dCI6ICI9\\nWW91IGFyZSBhIGRhdGEgcmVzZWFyY2ggYXNzaXN0YW50LiBHaXZlbiB0aGUg\\ndXNlcuKAmXMgQWdlLCBJbmNvbWUsIGFuZCBSZWdpb24sIGZldGNoIHRoZSBs\\nYXRlc3QgcmVhbC13b3JsZCBmaWd1cmVzIGFuZCByZXR1cm4gX29ubHlfIHZh\\nbGlkIEpTT04gd2l0aCB0aGVzZSBrZXlzOlxuXG57XG4gIFwic2F2aW5nc1F1\\nYXJ0aWxlc1wiOiB7IFwicTFcIjogbnVtYmVyLCBcIm1lZGlhblwiOiBudW1i\\nZXIsIFwicTNcIjogbnVtYmVyLCBcIm1heFwiOiBudW1iZXIgfSxcbiAgXCJs\\naWZlRXhwZWN0YW5jeVwiOiBudW1iZXIsXG4gIFwic3NpRXN0aW1hdGVcIjog\\nbnVtYmVyLFxuICBcImhlYWx0aENvc3RcIjogbnVtYmVyLFxufVxuXG5Tb3Vy\\nY2VzIHRvIHVzZTpcbuKAoiBGZWQgU0NGICgyNXRoLzUwdGgvNzV0aC90b3Ag\\ncmV0aXJlbWVudCBzYXZpbmdzIGJ5IGFnZSAmIGluY29tZSkgIFxu4oCiIFNT\\nQSBQZXJpb2QgTGlmZSBUYWJsZSBmb3IgbGlmZSBleHBlY3RhbmN5ICBcbuKA\\noiBTU0EgUElBIGNhbGN1bGF0b3IgZm9yIFNvY2lhbCBTZWN1cml0eSBiZW5l\\nZml0ICBcbuKAoiBGUkVEIEFQSTogQ1BJQVVDU0wgZm9yIGluZmxhdGlvbiwg\\nREdTMTAgZm9yIDEwLXlyIFRyZWFzdXJ5ICBcbuKAoiBTJlAgNTAwIHRvdGFs\\nIHJldHVybiBpbmRleCBmb3IgZXF1aXR5IHJldHVybnMgIFxu4oCiIENNUyBw\\nZXItY2FwaXRhIGhlYWx0aCBzcGVuZGluZyBmb3IgYWdlcyA2NSsgIFxu4oCi\\nIFRheCBGb3VuZGF0aW9uIGZvciBzdGF0ZSB0b3AgbWFyZ2luYWwgaW5jb21l\\nLXRheCByYXRlICBcbuKAoiBCRUEgUmVnaW9uYWwgUHJpY2UgUGFyaXRpZXMg\\nZm9yIGNvc3Qtb2YtbGl2aW5nIGluZGV4ICBcblxuVXNlciBEYXRhIChpbmpl\\nY3QgdmlhIGV4cHJlc3Npb25zKTogIFxuLSBBZ2U6IHt7JGpzb24uYm9keS5B\\nZ2V9fSAgXG4tIEluY29tZToge3skanNvbi5ib2R5LkluY29tZX19ICBcbi0g\\nUmVnaW9uOiB7eyRqc29uLmJvZHkuUmVnaW9ufX1cblxuUmVzcG9uZCBfb25s\\neV8gd2l0aCB0aGUgSlNPTiBvYmplY3TigJRubyBleHRyYSB0ZXh0IG9yIGNv\\nbW1lbnRhcnkuIiwKICAgICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAg\\nICAgICJ0eXBlIjogIkBuOG4vbjhuLW5vZGVzLWxhbmdjaGFpbi5hZ2VudCIs\\nCiAgICAgICJ0eXBlVmVyc2lvbiI6IDEuOCwKICAgICAgInBvc2l0aW9uIjog\\nWwogICAgICAgIDEwODAsCiAgICAgICAgODAKICAgICAgXSwKICAgICAgImlk\\nIjogIjMzMGFkZWEwLTRjYmItNGI5ZS1iZDkyLWMxM2MwYTY1YzI3NCIsCiAg\\nICAgICJuYW1lIjogIlJlc2VhcmNoIEFnZW50IiwKICAgICAgImRpc2FibGVk\\nIjogdHJ1ZQogICAgfSwKICAgIHsKICAgICAgInBhcmFtZXRlcnMiOiB7CiAg\\nICAgICAgIm1ldGhvZCI6ICJQT1NUIiwKICAgICAgICAidXJsIjogImh0dHBz\\nOi8vYXBpLnBkZi5jby92MS9wZGYvZWRpdC9hZGQiLAogICAgICAgICJzZW5k\\nSGVhZGVycyI6IHRydWUsCiAgICAgICAgImhlYWRlclBhcmFtZXRlcnMiOiB7\\nCiAgICAgICAgICAicGFyYW1ldGVycyI6IFsKICAgICAgICAgICAgewogICAg\\nICAgICAgICAgICJuYW1lIjogIngtYXBpLWtleSIsCiAgICAgICAgICAgICAg\\nInZhbHVlIjogImxpYW1Ad2luZS1oYXVsLmNvbV9LYUE3RFRDR0xtVUxUZE5M\\nOXREQmg4NnV0NDNVdjFsRzRwVjRmT1RvQUdub280M2cxV3VjRlcybUt6N3hM\\nbE0zIgogICAgICAgICAgICB9LAogICAgICAgICAgICB7CiAgICAgICAgICAg\\nICAgIm5hbWUiOiAiQ29udGVudC1UeXBlIiwKICAgICAgICAgICAgICAidmFs\\ndWUiOiAiYXBwbGljYXRpb24vanNvbiIKICAgICAgICAgICAgfQogICAgICAg\\nICAgXQogICAgICAgIH0sCiAgICAgICAgInNlbmRCb2R5IjogdHJ1ZSwKICAg\\nICAgICAic3BlY2lmeUJvZHkiOiAianNvbiIsCiAgICAgICAgImpzb25Cb2R5\\nIjogIj17eyAkanNvbiB9fSIsCiAgICAgICAgIm9wdGlvbnMiOiB7fQogICAg\\nICB9LAogICAgICAidHlwZSI6ICJuOG4tbm9kZXMtYmFzZS5odHRwUmVxdWVz\\ndCIsCiAgICAgICJ0eXBlVmVyc2lvbiI6IDQuMiwKICAgICAgInBvc2l0aW9u\\nIjogWwogICAgICAgIDYwMCwKICAgICAgICAtMTYwCiAgICAgIF0sCiAgICAg\\nICJpZCI6ICIzZmVjZDNmNS04MTUyLTQyYWItYjliYS00NjhiNjRjZWExZTMi\\nLAogICAgICAibmFtZSI6ICJQREYtQ29tcGxldGVyIgogICAgfSwKICAgIHsK\\nICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAgICAgInVybCI6ICI9e3sgJGpz\\nb24udXJsIH19IiwKICAgICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAg\\nICAgICJ0eXBlIjogIm44bi1ub2Rlcy1iYXNlLmh0dHBSZXF1ZXN0IiwKICAg\\nICAgInR5cGVWZXJzaW9uIjogNC4yLAogICAgICAicG9zaXRpb24iOiBbCiAg\\nICAgICAgODIwLAogICAgICAgIC0xNjAKICAgICAgXSwKICAgICAgImlkIjog\\nImFlYmYxYzAzLTg2MDgtNDdiZC1iMTY0LTAzN2FiZjczYTQzNiIsCiAgICAg\\nICJuYW1lIjogIkRvd25sb2FkLVBERiIKICAgIH0sCiAgICB7CiAgICAgICJw\\nYXJhbWV0ZXJzIjogewogICAgICAgICJqc0NvZGUiOiAicmV0dXJuIHtcbiAg\\ndXJsOiBcImh0dHBzOi8vZHJpdmUuZ29vZ2xlLmNvbS91Yz9leHBvcnQ9ZG93\\nbmxvYWQmaWQ9MUxCTFhrNC1Yd2czaWhjcFVfSktTRkpoQTd6MmFYRlRmXCIs\\nXG4gIG5hbWU6IGBSZXRpcmVtZW50X1BsYW5fJHskanNvbi5ib2R5Lm5hbWUg\\nfHwgJ0NsaWVudCd9LnBkZmAsXG4gIGFzeW5jOiBmYWxzZSxcbiAgZmllbGRz\\nOiBbXG4gICAgeyBmaWVsZG5hbWU6IFwiTmFtZVwiLCBwYWdlczogXCIwXCIs\\nIHRleHQ6ICRqc29uLmJvZHkubmFtZSB9LFxuICAgIHsgZmllbGRuYW1lOiBc\\nIkFnZVwiLCBwYWdlczogXCIwXCIsIHRleHQ6ICRqc29uLmJvZHkuYWdlIH0s\\nXG4gICAgeyBmaWVsZG5hbWU6IFwiQW5udWFsIEluY29tZVwiLCBwYWdlczog\\nXCIwXCIsIHRleHQ6IGAkJHskanNvbi5ib2R5LmluY29tZX1gIH0sXG4gICAg\\neyBmaWVsZG5hbWU6IFwiUmV0aXJlbWVudCBTYXZpbmdzXCIsIHBhZ2VzOiBc\\nIjBcIiwgdGV4dDogYCQkeyRqc29uLmJvZHkuc2F2aW5nc31gIH0sXG4gICAg\\neyBmaWVsZG5hbWU6IFwiUmV0aXJlbWVudCBBZ2VcIiwgcGFnZXM6IFwiMFwi\\nLCB0ZXh0OiAkanNvbi5ib2R5LnJldGlyZUFnZSB9LFxuICAgIHsgZmllbGRu\\nYW1lOiBcIkxpZmVzdHlsZSBHb2FsXCIsIHBhZ2VzOiBcIjBcIiwgdGV4dDog\\nJGpzb24uYm9keS5saWZlc3R5bGUgfSxcbiAgICB7IGZpZWxkbmFtZTogXCJS\\nZXRpcmVtZW50IEluc2lnaHRcIiwgcGFnZXM6IFwiMFwiLCB0ZXh0OiAkanNv\\nbi5ib2R5LnN1bW1hcnkgfVxuICBdXG59OyIKICAgICAgfSwKICAgICAgInR5\\ncGUiOiAibjhuLW5vZGVzLWJhc2UuY29kZSIsCiAgICAgICJ0eXBlVmVyc2lv\\nbiI6IDIsCiAgICAgICJwb3NpdGlvbiI6IFsKICAgICAgICAzMDAsCiAgICAg\\nICAgLTE2MAogICAgICBdLAogICAgICAiaWQiOiAiMzI1MDg4NWUtYWUxMS00\\nNmE0LTliOTItNjlmZjQwNTBhM2U0IiwKICAgICAgIm5hbWUiOiAiR2VuZXJh\\ndGUgUERGIFBheWxvYWQiCiAgICB9LAogICAgewogICAgICAicGFyYW1ldGVy\\ncyI6IHsKICAgICAgICAibW9kZSI6ICJyYXciLAogICAgICAgICJqc29uT3V0\\ncHV0IjogIj17XG4gIFwic3VtbWFyeVwiOiBcInt7ICQoJ0luc2lnaHQgR2Vu\\nZXJhdG9yJykuaXRlbS5qc29uLm1lc3NhZ2UuY29udGVudC5yZXBsYWNlKC9c\\nIi9nLCAnXFxcXFwiJykucmVwbGFjZSgvXFxuL2csICdcXFxcbicpIH19XCJc\\nbixcbiAgXCJxdWVzdGlvbnNcIjoge3sgJGl0ZW1zKFwiRm9sbG93LXVwIEdl\\nbmVyYXRvclwiKVswXS5qc29uLmNob2ljZXNbMF0ubWVzc2FnZS5jb250ZW50\\nLnF1ZXN0aW9ucyB9fVxufSIsCiAgICAgICAgIm9wdGlvbnMiOiB7fQogICAg\\nICB9LAogICAgICAidHlwZSI6ICJuOG4tbm9kZXMtYmFzZS5zZXQiLAogICAg\\nICAidHlwZVZlcnNpb24iOiAzLjQsCiAgICAgICJwb3NpdGlvbiI6IFsKICAg\\nICAgICAxNDQwLAogICAgICAgIDAKICAgICAgXSwKICAgICAgImlkIjogIjA5\\nMGRiMjVlLWNiYmEtNGNjZS05ZDI2LTY0OWQ5Y2Q4YjIyOCIsCiAgICAgICJu\\nYW1lIjogIlByZXBhcmUgSW5zaWdodCBQYXlsb2FkIgogICAgfSwKICAgIHsK\\nICAgICAgInBhcmFtZXRlcnMiOiB7CiAgICAgICAgInJlc3BvbmRXaXRoIjog\\nImpzb24iLAogICAgICAgICJyZXNwb25zZUJvZHkiOiAie1xuICBcIm1lc3Nh\\nZ2VcIjogXCLinIUgUGxhbiByZWNlaXZlZCEgWW91ciBQREYgaXMgYmVpbmcg\\nZW1haWxlZCBub3cg4oCUIGNoZWNrIHlvdXIgaW5ib3ggc2hvcnRseS5cIlxu\\nfVxuIiwKICAgICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAgICAgICJ0\\neXBlIjogIm44bi1ub2Rlcy1iYXNlLnJlc3BvbmRUb1dlYmhvb2siLAogICAg\\nICAidHlwZVZlcnNpb24iOiAxLjEsCiAgICAgICJwb3NpdGlvbiI6IFsKICAg\\nICAgICAyMDAsCiAgICAgICAgLTM0MAogICAgICBdLAogICAgICAiaWQiOiAi\\nZDljODJiMzUtNmY4OS00MDFhLWI0YWMtOGVhYjRlMjgxNTgyIiwKICAgICAg\\nIm5hbWUiOiAiUXVpY2sgQ29uZmlybSBSZXNwb25zZSIKICAgIH0sCiAgICB7\\nCiAgICAgICJwYXJhbWV0ZXJzIjogewogICAgICAgICJhdXRoZW50aWNhdGlv\\nbiI6ICJzZXJ2aWNlQWNjb3VudCIsCiAgICAgICAgIm9wZXJhdGlvbiI6ICJh\\ncHBlbmQiLAogICAgICAgICJkb2N1bWVudElkIjogewogICAgICAgICAgIl9f\\ncmwiOiB0cnVlLAogICAgICAgICAgInZhbHVlIjogIjEwMmkxZTNrR090VVFu\\naHFJVTNYVjVDV0dOT2tqZzJPV3g0aDFYeEg1VHY0IiwKICAgICAgICAgICJt\\nb2RlIjogImxpc3QiLAogICAgICAgICAgImNhY2hlZFJlc3VsdE5hbWUiOiAi\\nVGFsbHkgZm9ybSIsCiAgICAgICAgICAiY2FjaGVkUmVzdWx0VXJsIjogImh0\\ndHBzOi8vZG9jcy5nb29nbGUuY29tL3NwcmVhZHNoZWV0cy9kLzEwMmkxZTNr\\nR090VVFuaHFJVTNYVjVDV0dOT2tqZzJPV3g0aDFYeEg1VHY0L2VkaXQ/dXNw\\nPWRyaXZlc2RrIgogICAgICAgIH0sCiAgICAgICAgInNoZWV0TmFtZSI6IHsK\\nICAgICAgICAgICJfX3JsIjogdHJ1ZSwKICAgICAgICAgICJ2YWx1ZSI6IDY1\\nNTQ0MDMwLAogICAgICAgICAgIm1vZGUiOiAibGlzdCIsCiAgICAgICAgICAi\\nY2FjaGVkUmVzdWx0TmFtZSI6ICJTaGVldDEiLAogICAgICAgICAgImNhY2hl\\nZFJlc3VsdFVybCI6ICJodHRwczovL2RvY3MuZ29vZ2xlLmNvbS9zcHJlYWRz\\naGVldHMvZC8xMDJpMWUza0dPdFVRbmhxSVUzWFY1Q1dHTk9ramcyT1d4NGgx\\nWHhINVR2NC9lZGl0I2dpZD02NTU0NDAzMCIKICAgICAgICB9LAogICAgICAg\\nICJjb2x1bW5zIjogewogICAgICAgICAgIm1hcHBpbmdNb2RlIjogImRlZmlu\\nZUJlbG93IiwKICAgICAgICAgICJ2YWx1ZSI6IHsKICAgICAgICAgICAgIk5h\\nbWUiOiAiPXt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5pdGVtLmpzb24uYm9k\\neS5uYW1lIH19IiwKICAgICAgICAgICAgIkluY29tZSI6ICI9e3sgJCgnUmV0\\naXJlbWVudC1lbWFpbCcpLml0ZW0uanNvbi5ib2R5LmluY29tZSB9fSIsCiAg\\nICAgICAgICAgICJBZ2UiOiAiPXt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5p\\ndGVtLmpzb24uYm9keS5hZ2UgfX0iLAogICAgICAgICAgICAiU2F2aW5ncyI6\\nICI9e3sgJCgnUmV0aXJlbWVudC1lbWFpbCcpLml0ZW0uanNvbi5ib2R5LnNh\\ndmluZ3MgfX0iLAogICAgICAgICAgICAiUmV0aXJlIEFnZSI6ICI9e3sgJCgn\\nUmV0aXJlbWVudC1lbWFpbCcpLml0ZW0uanNvbi5ib2R5LnJldGlyZUFnZSB9\\nfSIsCiAgICAgICAgICAgICJsaWZlc3R5bGUiOiAiPXt7ICQoJ1JldGlyZW1l\\nbnQtZW1haWwnKS5pdGVtLmpzb24uYm9keS5saWZlc3R5bGUgfX0iLAogICAg\\nICAgICAgICAiZW1haWwiOiAiPXt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5p\\ndGVtLmpzb24uYm9keS5lbWFpbCB9fSIsCiAgICAgICAgICAgICJQaG9uZSBO\\ndW1iZXIiOiAiPXt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5pdGVtLmpzb24u\\nYm9keS5waG9uZSB9fSIsCiAgICAgICAgICAgICJEYXRlIjogIj17eyAkKCdS\\nZXRpcmVtZW50LWVtYWlsJykuaXRlbS5qc29uLmJvZHkudGltZXN0YW1wIH19\\nIgogICAgICAgICAgfSwKICAgICAgICAgICJtYXRjaGluZ0NvbHVtbnMiOiBb\\nXSwKICAgICAgICAgICJzY2hlbWEiOiBbCiAgICAgICAgICAgIHsKICAgICAg\\nICAgICAgICAiaWQiOiAiTmFtZSIsCiAgICAgICAgICAgICAgImRpc3BsYXlO\\nYW1lIjogIk5hbWUiLAogICAgICAgICAgICAgICJyZXF1aXJlZCI6IGZhbHNl\\nLAogICAgICAgICAgICAgICJkZWZhdWx0TWF0Y2giOiBmYWxzZSwKICAgICAg\\nICAgICAgICAiZGlzcGxheSI6IHRydWUsCiAgICAgICAgICAgICAgInR5cGUi\\nOiAic3RyaW5nIiwKICAgICAgICAgICAgICAiY2FuQmVVc2VkVG9NYXRjaCI6\\nIHRydWUKICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAg\\nICAgICJpZCI6ICJBZ2UiLAogICAgICAgICAgICAgICJkaXNwbGF5TmFtZSI6\\nICJBZ2UiLAogICAgICAgICAgICAgICJyZXF1aXJlZCI6IGZhbHNlLAogICAg\\nICAgICAgICAgICJkZWZhdWx0TWF0Y2giOiBmYWxzZSwKICAgICAgICAgICAg\\nICAiZGlzcGxheSI6IHRydWUsCiAgICAgICAgICAgICAgInR5cGUiOiAic3Ry\\naW5nIiwKICAgICAgICAgICAgICAiY2FuQmVVc2VkVG9NYXRjaCI6IHRydWUK\\nICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgICJp\\nZCI6ICJJbmNvbWUiLAogICAgICAgICAgICAgICJkaXNwbGF5TmFtZSI6ICJJ\\nbmNvbWUiLAogICAgICAgICAgICAgICJyZXF1aXJlZCI6IGZhbHNlLAogICAg\\nICAgICAgICAgICJkZWZhdWx0TWF0Y2giOiBmYWxzZSwKICAgICAgICAgICAg\\nICAiZGlzcGxheSI6IHRydWUsCiAgICAgICAgICAgICAgInR5cGUiOiAic3Ry\\naW5nIiwKICAgICAgICAgICAgICAiY2FuQmVVc2VkVG9NYXRjaCI6IHRydWUK\\nICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgICJp\\nZCI6ICJTYXZpbmdzIiwKICAgICAgICAgICAgICAiZGlzcGxheU5hbWUiOiAi\\nU2F2aW5ncyIsCiAgICAgICAgICAgICAgInJlcXVpcmVkIjogZmFsc2UsCiAg\\nICAgICAgICAgICAgImRlZmF1bHRNYXRjaCI6IGZhbHNlLAogICAgICAgICAg\\nICAgICJkaXNwbGF5IjogdHJ1ZSwKICAgICAgICAgICAgICAidHlwZSI6ICJz\\ndHJpbmciLAogICAgICAgICAgICAgICJjYW5CZVVzZWRUb01hdGNoIjogdHJ1\\nZQogICAgICAgICAgICB9LAogICAgICAgICAgICB7CiAgICAgICAgICAgICAg\\nImlkIjogIlJldGlyZSBBZ2UiLAogICAgICAgICAgICAgICJkaXNwbGF5TmFt\\nZSI6ICJSZXRpcmUgQWdlIiwKICAgICAgICAgICAgICAicmVxdWlyZWQiOiBm\\nYWxzZSwKICAgICAgICAgICAgICAiZGVmYXVsdE1hdGNoIjogZmFsc2UsCiAg\\nICAgICAgICAgICAgImRpc3BsYXkiOiB0cnVlLAogICAgICAgICAgICAgICJ0\\neXBlIjogInN0cmluZyIsCiAgICAgICAgICAgICAgImNhbkJlVXNlZFRvTWF0\\nY2giOiB0cnVlCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAgICAg\\nICAgICAgICAiaWQiOiAibGlmZXN0eWxlIiwKICAgICAgICAgICAgICAiZGlz\\ncGxheU5hbWUiOiAibGlmZXN0eWxlIiwKICAgICAgICAgICAgICAicmVxdWly\\nZWQiOiBmYWxzZSwKICAgICAgICAgICAgICAiZGVmYXVsdE1hdGNoIjogZmFs\\nc2UsCiAgICAgICAgICAgICAgImRpc3BsYXkiOiB0cnVlLAogICAgICAgICAg\\nICAgICJ0eXBlIjogInN0cmluZyIsCiAgICAgICAgICAgICAgImNhbkJlVXNl\\nZFRvTWF0Y2giOiB0cnVlCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsK\\nICAgICAgICAgICAgICAiaWQiOiAiZW1haWwiLAogICAgICAgICAgICAgICJk\\naXNwbGF5TmFtZSI6ICJlbWFpbCIsCiAgICAgICAgICAgICAgInJlcXVpcmVk\\nIjogZmFsc2UsCiAgICAgICAgICAgICAgImRlZmF1bHRNYXRjaCI6IGZhbHNl\\nLAogICAgICAgICAgICAgICJkaXNwbGF5IjogdHJ1ZSwKICAgICAgICAgICAg\\nICAidHlwZSI6ICJzdHJpbmciLAogICAgICAgICAgICAgICJjYW5CZVVzZWRU\\nb01hdGNoIjogdHJ1ZQogICAgICAgICAgICB9LAogICAgICAgICAgICB7CiAg\\nICAgICAgICAgICAgImlkIjogIlBob25lIE51bWJlciIsCiAgICAgICAgICAg\\nICAgImRpc3BsYXlOYW1lIjogIlBob25lIE51bWJlciIsCiAgICAgICAgICAg\\nICAgInJlcXVpcmVkIjogZmFsc2UsCiAgICAgICAgICAgICAgImRlZmF1bHRN\\nYXRjaCI6IGZhbHNlLAogICAgICAgICAgICAgICJkaXNwbGF5IjogdHJ1ZSwK\\nICAgICAgICAgICAgICAidHlwZSI6ICJzdHJpbmciLAogICAgICAgICAgICAg\\nICJjYW5CZVVzZWRUb01hdGNoIjogdHJ1ZSwKICAgICAgICAgICAgICAicmVt\\nb3ZlZCI6IGZhbHNlCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAg\\nICAgICAgICAgICAiaWQiOiAiRGF0ZSIsCiAgICAgICAgICAgICAgImRpc3Bs\\nYXlOYW1lIjogIkRhdGUiLAogICAgICAgICAgICAgICJyZXF1aXJlZCI6IGZh\\nbHNlLAogICAgICAgICAgICAgICJkZWZhdWx0TWF0Y2giOiBmYWxzZSwKICAg\\nICAgICAgICAgICAiZGlzcGxheSI6IHRydWUsCiAgICAgICAgICAgICAgInR5\\ncGUiOiAic3RyaW5nIiwKICAgICAgICAgICAgICAiY2FuQmVVc2VkVG9NYXRj\\naCI6IHRydWUsCiAgICAgICAgICAgICAgInJlbW92ZWQiOiBmYWxzZQogICAg\\nICAgICAgICB9CiAgICAgICAgICBdLAogICAgICAgICAgImF0dGVtcHRUb0Nv\\nbnZlcnRUeXBlcyI6IGZhbHNlLAogICAgICAgICAgImNvbnZlcnRGaWVsZHNU\\nb1N0cmluZyI6IGZhbHNlCiAgICAgICAgfSwKICAgICAgICAib3B0aW9ucyI6\\nIHt9CiAgICAgIH0sCiAgICAgICJ0eXBlIjogIm44bi1ub2Rlcy1iYXNlLmdv\\nb2dsZVNoZWV0cyIsCiAgICAgICJ0eXBlVmVyc2lvbiI6IDQuNSwKICAgICAg\\nInBvc2l0aW9uIjogWwogICAgICAgIDQ4MCwKICAgICAgICAtMzQwCiAgICAg\\nIF0sCiAgICAgICJpZCI6ICI0OGRlZTI1Ny0xODc4LTQ4MDUtOWM0Ni03ZDYx\\nMWY5MmZjN2YiLAogICAgICAibmFtZSI6ICJHb29nbGUgU2hlZXRzIiwKICAg\\nICAgImNyZWRlbnRpYWxzIjogewogICAgICAgICJnb29nbGVBcGkiOiB7CiAg\\nICAgICAgICAiaWQiOiAidFlTb2VORTFCNGIwV2p3dyIsCiAgICAgICAgICAi\\nbmFtZSI6ICJHb29nbGUgU2VydmljZSBBY2NvdW50IGFjY291bnQiCiAgICAg\\nICAgfQogICAgICB9CiAgICB9LAogICAgewogICAgICAicGFyYW1ldGVycyI6\\nIHsKICAgICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAgICAgICJ0eXBl\\nIjogIm44bi1ub2Rlcy1iYXNlLnNldCIsCiAgICAgICJ0eXBlVmVyc2lvbiI6\\nIDMuNCwKICAgICAgInBvc2l0aW9uIjogWwogICAgICAgIDE2MCwKICAgICAg\\nICAwCiAgICAgIF0sCiAgICAgICJpZCI6ICI0ZGE0NzMxOS00ZjMwLTQ4MTgt\\nYjU0ZC1hNzA3NTAxNjYyNDYiLAogICAgICAibmFtZSI6ICJFZGl0IEZpZWxk\\ncyIKICAgIH0sCiAgICB7CiAgICAgICJwYXJhbWV0ZXJzIjogewogICAgICAg\\nICJtZXRob2QiOiAiUE9TVCIsCiAgICAgICAgInVybCI6ICJodHRwczovL3Nl\\ncnZpY2VzLmxlYWRjb25uZWN0b3JocS5jb20vaG9va3MvZ2gzcEdVZmdGakdE\\na1Awd0o3R0wvd2ViaG9vay10cmlnZ2VyL2d3WlNDU2M3blNOaFRCM1ZEZlNG\\nIiwKICAgICAgICAic2VuZEhlYWRlcnMiOiB0cnVlLAogICAgICAgICJoZWFk\\nZXJQYXJhbWV0ZXJzIjogewogICAgICAgICAgInBhcmFtZXRlcnMiOiBbCiAg\\nICAgICAgICAgIHsKICAgICAgICAgICAgICAibmFtZSI6ICJDb250ZW50LVR5\\ncGUiLAogICAgICAgICAgICAgICJ2YWx1ZSI6ICJhcHBsaWNhdGlvbi9qc29u\\nIgogICAgICAgICAgICB9CiAgICAgICAgICBdCiAgICAgICAgfSwKICAgICAg\\nICAic2VuZEJvZHkiOiB0cnVlLAogICAgICAgICJjb250ZW50VHlwZSI6ICJt\\ndWx0aXBhcnQtZm9ybS1kYXRhIiwKICAgICAgICAiYm9keVBhcmFtZXRlcnMi\\nOiB7CiAgICAgICAgICAicGFyYW1ldGVycyI6IFsKICAgICAgICAgICAgewog\\nICAgICAgICAgICAgICJuYW1lIjogImVtYWlsIiwKICAgICAgICAgICAgICAi\\ndmFsdWUiOiAiPXt7ICQoJ1JldGlyZW1lbnQtZW1haWwnKS5pdGVtLmpzb24u\\nYm9keS5lbWFpbCB9fSIKICAgICAgICAgICAgfSwKICAgICAgICAgICAgewog\\nICAgICAgICAgICAgICJuYW1lIjogIm5hbWUiLAogICAgICAgICAgICAgICJ2\\nYWx1ZSI6ICI9e3sgJCgnUmV0aXJlbWVudC1lbWFpbCcpLml0ZW0uanNvbi5i\\nb2R5Lm5hbWUgfX0iCiAgICAgICAgICAgIH0sCiAgICAgICAgICAgIHsKICAg\\nICAgICAgICAgICAibmFtZSI6ICJwZGZVUkwiLAogICAgICAgICAgICAgICJ2\\nYWx1ZSI6ICI9e3sgJG5vZGVbXCJQREYtQ29tcGxldGVyXCJdLmpzb24udXJs\\nIH19IgogICAgICAgICAgICB9CiAgICAgICAgICBdCiAgICAgICAgfSwKICAg\\nICAgICAib3B0aW9ucyI6IHt9CiAgICAgIH0sCiAgICAgICJ0eXBlIjogIm44\\nbi1ub2Rlcy1iYXNlLmh0dHBSZXF1ZXN0IiwKICAgICAgInR5cGVWZXJzaW9u\\nIjogNC4yLAogICAgICAicG9zaXRpb24iOiBbCiAgICAgICAgOTYwLAogICAg\\nICAgIC0zNDAKICAgICAgXSwKICAgICAgImlkIjogIjUzY2NhY2NkLWRmMzEt\\nNDZjMi04OTAxLWU1NjcyODA1NDkzMyIsCiAgICAgICJuYW1lIjogIkdvSGln\\naExldmVsIgogICAgfQogIF0sCiAgInBpbkRhdGEiOiB7CiAgICAiV2ViaG9v\\nayI6IFsKICAgICAgewogICAgICAgICJqc29uIjogewogICAgICAgICAgImhl\\nYWRlcnMiOiB7CiAgICAgICAgICAgICJob3N0IjogImxpYW1tYXR0aGVzLmFw\\ncC5uOG4uY2xvdWQiLAogICAgICAgICAgICAidXNlci1hZ2VudCI6ICJNb3pp\\nbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdl\\nYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTMxLjAu\\nMC4wIFNhZmFyaS81MzcuMzYgRWRnLzEzMS4wLjAuMCIsCiAgICAgICAgICAg\\nICJjb250ZW50LWxlbmd0aCI6ICIxMDYiLAogICAgICAgICAgICAiYWNjZXB0\\nIjogIiovKiIsCiAgICAgICAgICAgICJhY2NlcHQtZW5jb2RpbmciOiAiZ3pp\\ncCwgYnIiLAogICAgICAgICAgICAiYWNjZXB0LWxhbmd1YWdlIjogImVuLVVT\\nLGVuO3E9MC45IiwKICAgICAgICAgICAgImNkbi1sb29wIjogImNsb3VkZmxh\\ncmU7IGxvb3BzPTE7IHN1YnJlcXM9MSIsCiAgICAgICAgICAgICJjZi1jb25u\\nZWN0aW5nLWlwIjogIjQ3LjE2MC4yMi4yNDgiLAogICAgICAgICAgICAiY2Yt\\nZXctdmlhIjogIjE1IiwKICAgICAgICAgICAgImNmLWlwY291bnRyeSI6ICJV\\nUyIsCiAgICAgICAgICAgICJjZi1yYXkiOiAiOTQ2MWNhOWY2NjVjMmU1YS1E\\nRlciLAogICAgICAgICAgICAiY2YtdmlzaXRvciI6ICJ7XCJzY2hlbWVcIjpc\\nImh0dHBzXCJ9IiwKICAgICAgICAgICAgImNmLXdvcmtlciI6ICJuOG4uY2xv\\ndWQiLAogICAgICAgICAgICAiY29udGVudC10eXBlIjogImFwcGxpY2F0aW9u\\nL2pzb24iLAogICAgICAgICAgICAib3JpZ2luIjogIm51bGwiLAogICAgICAg\\nICAgICAicHJpb3JpdHkiOiAidT0xLCBpIiwKICAgICAgICAgICAgInNlYy1j\\naC11YSI6ICJcIk1pY3Jvc29mdCBFZGdlXCI7dj1cIjEzMVwiLCBcIkNocm9t\\naXVtXCI7dj1cIjEzMVwiLCBcIk5vdF9BIEJyYW5kXCI7dj1cIjI0XCIiLAog\\nICAgICAgICAgICAic2VjLWNoLXVhLW1vYmlsZSI6ICI/MCIsCiAgICAgICAg\\nICAgICJzZWMtY2gtdWEtcGxhdGZvcm0iOiAiXCJXaW5kb3dzXCIiLAogICAg\\nICAgICAgICAic2VjLWZldGNoLWRlc3QiOiAiZW1wdHkiLAogICAgICAgICAg\\nICAic2VjLWZldGNoLW1vZGUiOiAiY29ycyIsCiAgICAgICAgICAgICJzZWMt\\nZmV0Y2gtc2l0ZSI6ICJjcm9zcy1zaXRlIiwKICAgICAgICAgICAgIngtZm9y\\nd2FyZGVkLWZvciI6ICI0Ny4xNjAuMjIuMjQ4LCAxNzIuNjkuNjUuMTciLAog\\nICAgICAgICAgICAieC1mb3J3YXJkZWQtaG9zdCI6ICJsaWFtbWF0dGhlcy5h\\ncHAubjhuLmNsb3VkIiwKICAgICAgICAgICAgIngtZm9yd2FyZGVkLXBvcnQi\\nOiAiNDQzIiwKICAgICAgICAgICAgIngtZm9yd2FyZGVkLXByb3RvIjogImh0\\ndHBzIiwKICAgICAgICAgICAgIngtZm9yd2FyZGVkLXNlcnZlciI6ICJ0cmFl\\nZmlrLXByb2QtdXNlcnMtZ3djLTUzLTc3ZGQ4ODQ0ZDctZDY3NXgiLAogICAg\\nICAgICAgICAieC1pcy10cnVzdGVkIjogInllcyIsCiAgICAgICAgICAgICJ4\\nLXJlYWwtaXAiOiAiNDcuMTYwLjIyLjI0OCIKICAgICAgICAgIH0sCiAgICAg\\nICAgICAicGFyYW1zIjoge30sCiAgICAgICAgICAicXVlcnkiOiB7fSwKICAg\\nICAgICAgICJib2R5IjogewogICAgICAgICAgICAiTmFtZSI6ICJMaWFtIiwK\\nICAgICAgICAgICAgIkFnZSI6ICI0NCIsCiAgICAgICAgICAgICJJbmNvbWUi\\nOiAiMTU2MDAwIiwKICAgICAgICAgICAgIlNhdmluZ3MiOiAiODc1MDAwIiwK\\nICAgICAgICAgICAgIlJldGlyZUFnZSI6ICI2MCIsCiAgICAgICAgICAgICJs\\naWZlc3R5bGUiOiAiY29tZm9ydGFibGUiCiAgICAgICAgICB9LAogICAgICAg\\nICAgIndlYmhvb2tVcmwiOiAiaHR0cHM6Ly9saWFtbWF0dGhlcy5hcHAubjhu\\nLmNsb3VkL3dlYmhvb2svUmV0aXJlbWVudC1mb3JtIiwKICAgICAgICAgICJl\\neGVjdXRpb25Nb2RlIjogInByb2R1Y3Rpb24iCiAgICAgICAgfQogICAgICB9\\nCiAgICBdLAogICAgIlJldGlyZW1lbnQtZW1haWwiOiBbCiAgICAgIHsKICAg\\nICAgICAianNvbiI6IHsKICAgICAgICAgICJoZWFkZXJzIjogewogICAgICAg\\nICAgICAiaG9zdCI6ICJsaWFtbWF0dGhlcy5hcHAubjhuLmNsb3VkIiwKICAg\\nICAgICAgICAgInVzZXItYWdlbnQiOiAiTW96aWxsYS81LjAgKFdpbmRvd3Mg\\nTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRN\\nTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzMS4wLjAuMCBTYWZhcmkvNTM3LjM2\\nIEVkZy8xMzEuMC4wLjAiLAogICAgICAgICAgICAiY29udGVudC1sZW5ndGgi\\nOiAiNjA3IiwKICAgICAgICAgICAgImFjY2VwdCI6ICIqLyoiLAogICAgICAg\\nICAgICAiYWNjZXB0LWVuY29kaW5nIjogImd6aXAsIGJyIiwKICAgICAgICAg\\nICAgImFjY2VwdC1sYW5ndWFnZSI6ICJlbi1VUyxlbjtxPTAuOSIsCiAgICAg\\nICAgICAgICJjZG4tbG9vcCI6ICJjbG91ZGZsYXJlOyBsb29wcz0xOyBzdWJy\\nZXFzPTEiLAogICAgICAgICAgICAiY2YtY29ubmVjdGluZy1pcCI6ICI0Ny4x\\nNjAuMjIuMjQ4IiwKICAgICAgICAgICAgImNmLWV3LXZpYSI6ICIxNSIsCiAg\\nICAgICAgICAgICJjZi1pcGNvdW50cnkiOiAiVVMiLAogICAgICAgICAgICAi\\nY2YtcmF5IjogIjk1MDNiMjJlMDMyMzQ2NDEtREZXIiwKICAgICAgICAgICAg\\nImNmLXZpc2l0b3IiOiAie1wic2NoZW1lXCI6XCJodHRwc1wifSIsCiAgICAg\\nICAgICAgICJjZi13b3JrZXIiOiAibjhuLmNsb3VkIiwKICAgICAgICAgICAg\\nImNvbnRlbnQtdHlwZSI6ICJhcHBsaWNhdGlvbi9qc29uIiwKICAgICAgICAg\\nICAgIm9yaWdpbiI6ICJudWxsIiwKICAgICAgICAgICAgInByaW9yaXR5Ijog\\nInU9MSwgaSIsCiAgICAgICAgICAgICJzZWMtY2gtdWEiOiAiXCJNaWNyb3Nv\\nZnQgRWRnZVwiO3Y9XCIxMzFcIiwgXCJDaHJvbWl1bVwiO3Y9XCIxMzFcIiwg\\nXCJOb3RfQSBCcmFuZFwiO3Y9XCIyNFwiIiwKICAgICAgICAgICAgInNlYy1j\\naC11YS1tb2JpbGUiOiAiPzAiLAogICAgICAgICAgICAic2VjLWNoLXVhLXBs\\nYXRmb3JtIjogIlwiV2luZG93c1wiIiwKICAgICAgICAgICAgInNlYy1mZXRj\\naC1kZXN0IjogImVtcHR5IiwKICAgICAgICAgICAgInNlYy1mZXRjaC1tb2Rl\\nIjogImNvcnMiLAogICAgICAgICAgICAic2VjLWZldGNoLXNpdGUiOiAiY3Jv\\nc3Mtc2l0ZSIsCiAgICAgICAgICAgICJ4LWZvcndhcmRlZC1mb3IiOiAiNDcu\\nMTYwLjIyLjI0OCwgMTYyLjE1OC4xNzUuOTIiLAogICAgICAgICAgICAieC1m\\nb3J3YXJkZWQtaG9zdCI6ICJsaWFtbWF0dGhlcy5hcHAubjhuLmNsb3VkIiwK\\nICAgICAgICAgICAgIngtZm9yd2FyZGVkLXBvcnQiOiAiNDQzIiwKICAgICAg\\nICAgICAgIngtZm9yd2FyZGVkLXByb3RvIjogImh0dHBzIiwKICAgICAgICAg\\nICAgIngtZm9yd2FyZGVkLXNlcnZlciI6ICJ0cmFlZmlrLXByb2QtdXNlcnMt\\nZ3djLTUzLTc3ZGQ4ODQ0ZDctZDY3NXgiLAogICAgICAgICAgICAieC1pcy10\\ncnVzdGVkIjogInllcyIsCiAgICAgICAgICAgICJ4LXJlYWwtaXAiOiAiNDcu\\nMTYwLjIyLjI0OCIKICAgICAgICAgIH0sCiAgICAgICAgICAicGFyYW1zIjog\\ne30sCiAgICAgICAgICAicXVlcnkiOiB7fSwKICAgICAgICAgICJib2R5Ijog\\newogICAgICAgICAgICAiYW5zd2VyMSI6IG51bGwsCiAgICAgICAgICAgICJh\\nbnN3ZXIyIjogIk1lIHdoZW4iLAogICAgICAgICAgICAiZW1haWwiOiAibGlh\\nbUB3aW5lLWhhdWwuY29tIiwKICAgICAgICAgICAgInBob25lIjogIiIsCiAg\\nICAgICAgICAgICJuYW1lIjogIkxpYW0iLAogICAgICAgICAgICAiYWdlIjog\\nIjMwIiwKICAgICAgICAgICAgImluY29tZSI6ICI1MDAwMCIsCiAgICAgICAg\\nICAgICJzYXZpbmdzIjogMCwKICAgICAgICAgICAgInJldGlyZUFnZSI6ICI2\\nMCIsCiAgICAgICAgICAgICJsaWZlc3R5bGUiOiAibW9kZXN0IiwKICAgICAg\\nICAgICAgInN1bW1hcnkiOiAiTGlhbSwgYXQgMzAgd2l0aCBhICQ1MCwwMDAg\\naW5jb21lIGFuZCBubyByZXRpcmVtZW50IHNhdmluZ3MsIHlvdXIgcmlzayBp\\ncyBnbGFyaW5nOiBhIGxvdyBpbmNvbWUgd2l0aCBhIGxvbmcgdGltZSBob3Jp\\nem9uIHNwZWxscyB0cm91YmxlLiBXaXRob3V0IHNhdmluZ3MsIHdpbGwgeW91\\nIGJlIGFibGUgdG8gdXBob2xkIHlvdXIgbGlmZXN0eWxlIGF0IDYwPyBUaGUg\\nY2xvY2sgaXMgdGlja2luZy5cblxuQXJlIHlvdSB0cnVseSByZWFkeSB0byBn\\nYW1ibGUgeW91ciBmdXR1cmUgb24gdGhlIGhvcGUgb2YgdG9tb3Jyb3cncyBp\\nbmNvbWU/IFRoZSBzb29uZXIgeW91IGFjdCBhbmQgYWRkcmVzcyB0aGlzIGdh\\ncCwgdGhlIGJldHRlci4gQW4gb3BlbiBsb29wIGF3YWl0cyB5b3VyIG1vdmUu\\nIiwKICAgICAgICAgICAgInRpbWVzdGFtcCI6ICIyMDI1LTA2LTE1VDE3OjA1\\nOjEyLjY0NFoiCiAgICAgICAgICB9LAogICAgICAgICAgIndlYmhvb2tVcmwi\\nOiAiaHR0cHM6Ly9saWFtbWF0dGhlcy5hcHAubjhuLmNsb3VkL3dlYmhvb2sv\\nMWYwYmE5ZDQtNTAyZC00YTYwLWI0ZTktZWU3ZTFkOWExMDQwIiwKICAgICAg\\nICAgICJleGVjdXRpb25Nb2RlIjogInByb2R1Y3Rpb24iCiAgICAgICAgfQog\\nICAgICB9CiAgICBdCiAgfSwKICAiY29ubmVjdGlvbnMiOiB7CiAgICAiV2Vi\\naG9vayI6IHsKICAgICAgIm1haW4iOiBbCiAgICAgICAgWwogICAgICAgICAg\\newogICAgICAgICAgICAibm9kZSI6ICJFZGl0IEZpZWxkcyIsCiAgICAgICAg\\nICAgICJ0eXBlIjogIm1haW4iLAogICAgICAgICAgICAiaW5kZXgiOiAwCiAg\\nICAgICAgICB9CiAgICAgICAgXQogICAgICBdCiAgICB9LAogICAgIkluc2ln\\naHQgR2VuZXJhdG9yIjogewogICAgICAibWFpbiI6IFsKICAgICAgICBbCiAg\\nICAgICAgICB7CiAgICAgICAgICAgICJub2RlIjogIkZvbGxvdy11cCBHZW5l\\ncmF0b3IiLAogICAgICAgICAgICAidHlwZSI6ICJtYWluIiwKICAgICAgICAg\\nICAgImluZGV4IjogMAogICAgICAgICAgfQogICAgICAgIF0KICAgICAgXQog\\nICAgfSwKICAgICJGb2xsb3ctdXAgR2VuZXJhdG9yIjogewogICAgICAibWFp\\nbiI6IFsKICAgICAgICBbCiAgICAgICAgICB7CiAgICAgICAgICAgICJub2Rl\\nIjogIlJlc2VhcmNoIEFnZW50IiwKICAgICAgICAgICAgInR5cGUiOiAibWFp\\nbiIsCiAgICAgICAgICAgICJpbmRleCI6IDAKICAgICAgICAgIH0sCiAgICAg\\nICAgICB7CiAgICAgICAgICAgICJub2RlIjogIlByZXBhcmUgSW5zaWdodCBQ\\nYXlsb2FkIiwKICAgICAgICAgICAgInR5cGUiOiAibWFpbiIsCiAgICAgICAg\\nICAgICJpbmRleCI6IDAKICAgICAgICAgIH0KICAgICAgICBdCiAgICAgIF0K\\nICAgIH0sCiAgICAiUmVzcG9uZCB0byBXZWJob29rIjogewogICAgICAibWFp\\nbiI6IFsKICAgICAgICBbXQogICAgICBdCiAgICB9LAogICAgIkdtYWlsIjog\\newogICAgICAibWFpbiI6IFsKICAgICAgICBbCiAgICAgICAgICB7CiAgICAg\\nICAgICAgICJub2RlIjogIlJlc3BvbmQgdG8gV2ViaG9vazEiLAogICAgICAg\\nICAgICAidHlwZSI6ICJtYWluIiwKICAgICAgICAgICAgImluZGV4IjogMAog\\nICAgICAgICAgfQogICAgICAgIF0KICAgICAgXQogICAgfSwKICAgICJSZXRp\\ncmVtZW50LWVtYWlsIjogewogICAgICAibWFpbiI6IFsKICAgICAgICBbCiAg\\nICAgICAgICB7CiAgICAgICAgICAgICJub2RlIjogIlF1aWNrIENvbmZpcm0g\\nUmVzcG9uc2UiLAogICAgICAgICAgICAidHlwZSI6ICJtYWluIiwKICAgICAg\\nICAgICAgImluZGV4IjogMAogICAgICAgICAgfSwKICAgICAgICAgIHsKICAg\\nICAgICAgICAgIm5vZGUiOiAiR2VuZXJhdGUgUERGIFBheWxvYWQiLAogICAg\\nICAgICAgICAidHlwZSI6ICJtYWluIiwKICAgICAgICAgICAgImluZGV4Ijog\\nMAogICAgICAgICAgfQogICAgICAgIF0KICAgICAgXQogICAgfSwKICAgICJD\\nYWxsIG44biBXb3JrZmxvdyBUb29sIjogewogICAgICAiYWlfdG9vbCI6IFsK\\nICAgICAgICBbCiAgICAgICAgICB7CiAgICAgICAgICAgICJub2RlIjogIlJl\\nc2VhcmNoIEFnZW50IiwKICAgICAgICAgICAgInR5cGUiOiAiYWlfdG9vbCIs\\nCiAgICAgICAgICAgICJpbmRleCI6IDAKICAgICAgICAgIH0KICAgICAgICBd\\nCiAgICAgIF0KICAgIH0sCiAgICAiT3BlbkFJIENoYXQgTW9kZWwiOiB7CiAg\\nICAgICJhaV9sYW5ndWFnZU1vZGVsIjogWwogICAgICAgIFsKICAgICAgICAg\\nIHsKICAgICAgICAgICAgIm5vZGUiOiAiUmVzZWFyY2ggQWdlbnQiLAogICAg\\nICAgICAgICAidHlwZSI6ICJhaV9sYW5ndWFnZU1vZGVsIiwKICAgICAgICAg\\nICAgImluZGV4IjogMAogICAgICAgICAgfQogICAgICAgIF0KICAgICAgXQog\\nICAgfSwKICAgICJSZXNlYXJjaCBBZ2VudCI6IHsKICAgICAgIm1haW4iOiBb\\nCiAgICAgICAgWwogICAgICAgICAgewogICAgICAgICAgICAibm9kZSI6ICJQ\\ncmVwYXJlIEluc2lnaHQgUGF5bG9hZCIsCiAgICAgICAgICAgICJ0eXBlIjog\\nIm1haW4iLAogICAgICAgICAgICAiaW5kZXgiOiAwCiAgICAgICAgICB9CiAg\\nICAgICAgXQogICAgICBdCiAgICB9LAogICAgIlBERi1Db21wbGV0ZXIiOiB7\\nCiAgICAgICJtYWluIjogWwogICAgICAgIFsKICAgICAgICAgIHsKICAgICAg\\nICAgICAgIm5vZGUiOiAiRG93bmxvYWQtUERGIiwKICAgICAgICAgICAgInR5\\ncGUiOiAibWFpbiIsCiAgICAgICAgICAgICJpbmRleCI6IDAKICAgICAgICAg\\nIH0KICAgICAgICBdCiAgICAgIF0KICAgIH0sCiAgICAiRG93bmxvYWQtUERG\\nIjogewogICAgICAibWFpbiI6IFsKICAgICAgICBbCiAgICAgICAgICB7CiAg\\nICAgICAgICAgICJub2RlIjogIkdtYWlsIiwKICAgICAgICAgICAgInR5cGUi\\nOiAibWFpbiIsCiAgICAgICAgICAgICJpbmRleCI6IDAKICAgICAgICAgIH0s\\nCiAgICAgICAgICB7CiAgICAgICAgICAgICJub2RlIjogIkdvSGlnaExldmVs\\nIiwKICAgICAgICAgICAgInR5cGUiOiAibWFpbiIsCiAgICAgICAgICAgICJp\\nbmRleCI6IDAKICAgICAgICAgIH0KICAgICAgICBdCiAgICAgIF0KICAgIH0s\\nCiAgICAiR2VuZXJhdGUgUERGIFBheWxvYWQiOiB7CiAgICAgICJtYWluIjog\\nWwogICAgICAgIFsKICAgICAgICAgIHsKICAgICAgICAgICAgIm5vZGUiOiAi\\nUERGLUNvbXBsZXRlciIsCiAgICAgICAgICAgICJ0eXBlIjogIm1haW4iLAog\\nICAgICAgICAgICAiaW5kZXgiOiAwCiAgICAgICAgICB9LAogICAgICAgICAg\\newogICAgICAgICAgICAibm9kZSI6ICJHb29nbGUgU2hlZXRzIiwKICAgICAg\\nICAgICAgInR5cGUiOiAibWFpbiIsCiAgICAgICAgICAgICJpbmRleCI6IDAK\\nICAgICAgICAgIH0KICAgICAgICBdCiAgICAgIF0KICAgIH0sCiAgICAiUHJl\\ncGFyZSBJbnNpZ2h0IFBheWxvYWQiOiB7CiAgICAgICJtYWluIjogWwogICAg\\nICAgIFsKICAgICAgICAgIHsKICAgICAgICAgICAgIm5vZGUiOiAiUmVzcG9u\\nZCB0byBXZWJob29rIiwKICAgICAgICAgICAgInR5cGUiOiAibWFpbiIsCiAg\\nICAgICAgICAgICJpbmRleCI6IDAKICAgICAgICAgIH0KICAgICAgICBdCiAg\\nICAgIF0KICAgIH0sCiAgICAiUXVpY2sgQ29uZmlybSBSZXNwb25zZSI6IHsK\\nICAgICAgIm1haW4iOiBbCiAgICAgICAgW10KICAgICAgXQogICAgfSwKICAg\\nICJFZGl0IEZpZWxkcyI6IHsKICAgICAgIm1haW4iOiBbCiAgICAgICAgWwog\\nICAgICAgICAgewogICAgICAgICAgICAibm9kZSI6ICJJbnNpZ2h0IEdlbmVy\\nYXRvciIsCiAgICAgICAgICAgICJ0eXBlIjogIm1haW4iLAogICAgICAgICAg\\nICAiaW5kZXgiOiAwCiAgICAgICAgICB9CiAgICAgICAgXQogICAgICBdCiAg\\nICB9LAogICAgIkdvSGlnaExldmVsIjogewogICAgICAibWFpbiI6IFsKICAg\\nICAgICBbXQogICAgICBdCiAgICB9CiAgfSwKICAiYWN0aXZlIjogdHJ1ZSwK\\nICAic2V0dGluZ3MiOiB7CiAgICAiZXhlY3V0aW9uT3JkZXIiOiAidjEiCiAg\\nfSwKICAidmVyc2lvbklkIjogIjM0NjBkNGYxLTljMjItNDc2My05ZDVkLWIw\\nNWQxM2M2MzdjOSIsCiAgIm1ldGEiOiB7CiAgICAidGVtcGxhdGVDcmVkc1Nl\\ndHVwQ29tcGxldGVkIjogdHJ1ZSwKICAgICJpbnN0YW5jZUlkIjogImZkZjEz\\nNzNkM2VmOTRiMjBkNzY2YmM2ZDgzYTQ1MjZkOWNlMjA1MTkyZjNjNDY4ODI0\\nMjNhYWIwMjQwMWVmMmEiCiAgfSwKICAiaWQiOiAiQ2JwYmYySE1FdXBVbEVh\\nSyIsCiAgInRhZ3MiOiBbXQp9\",\n  \"sha\": \"6e1e9436c0361a1964a5480fabc1bce3d3733744\",\n  \"branch\": \"main\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        200,
+        640
+      ],
+      "id": "1bfe8a48-2171-400a-92ba-a463bfa6ad48",
+      "name": "HTTP Request1",
+      "credentials": {
+        "githubApi": {
+          "id": "dDlLZuVZMEKvVi2c",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        640
+      ],
+      "id": "6cb73c65-b84d-422a-95ab-45385dc3f0f4",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "content": "## AI Generation \n**The brut of the work",
+        "height": 580,
+        "width": 2180
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -200,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "1f48ef8d-10a2-4904-9c37-e6e6495957f0",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-update",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        660,
+        640
+      ],
+      "id": "783fb927-91cd-49aa-ab81-8297e5a66ce8",
+      "name": "GitHub Push Trigger",
+      "webhookId": "8b62ff26-4842-4fe2-aaa3-fa15749c8bd9"
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/contents/Wealth_Managment%20(14).json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        640
+      ],
+      "id": "6afe4019-a5a4-41bb-905a-d4a04e17e8a5",
+      "name": "Fetch Workflow JSON",
+      "credentials": {
+        "githubApi": {
+          "id": "dDlLZuVZMEKvVi2c",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "https://liammatthes.app.n8n.cloud/rest/workflows/Cbpbf2HMEupUlEaK",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "JSON",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        640
+      ],
+      "id": "78a4202c-0818-48cf-8118-5ec61e9c79be",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n Function node: Decodes the base64 JSON workflow from GitHub\nconst b64 = $json[\"content\"]; // get the base64 encoded content\nconst decoded = Buffer.from(b64, 'base64').toString('utf8'); // decode to string\nconst workflowJson = JSON.parse(decoded); // parse as JSON\n\nreturn [ { json: workflowJson } ];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        640
+      ],
+      "id": "05069628-38e3-45ed-ba73-f6b9cb43d296",
+      "name": "Code"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "liammatthes.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+            "content-length": "106",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-US,en;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "47.160.22.248",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "9461ca9f665c2e5a-DFW",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "null",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "47.160.22.248, 172.69.65.17",
+            "x-forwarded-host": "liammatthes.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-53-77dd8844d7-d675x",
+            "x-is-trusted": "yes",
+            "x-real-ip": "47.160.22.248"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "Name": "Liam",
+            "Age": "44",
+            "Income": "156000",
+            "Savings": "875000",
+            "RetireAge": "60",
+            "lifestyle": "comfortable"
+          },
+          "webhookUrl": "https://liammatthes.app.n8n.cloud/webhook/Retirement-form",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Retirement-email": [
+      {
+        "json": {
+          "headers": {
+            "host": "liammatthes.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+            "content-length": "607",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-US,en;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "47.160.22.248",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "9503b22e03234641-DFW",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "null",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Microsoft Edge\";v=\"131\", \"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "47.160.22.248, 162.158.175.92",
+            "x-forwarded-host": "liammatthes.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-53-77dd8844d7-d675x",
+            "x-is-trusted": "yes",
+            "x-real-ip": "47.160.22.248"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "answer1": null,
+            "answer2": "Me when",
+            "email": "liam@wine-haul.com",
+            "phone": "",
+            "name": "Liam",
+            "age": "30",
+            "income": "50000",
+            "savings": 0,
+            "retireAge": "60",
+            "lifestyle": "modest",
+            "summary": "Liam, at 30 with a $50,000 income and no retirement savings, your risk is glaring: a low income with a long time horizon spells trouble. Without savings, will you be able to uphold your lifestyle at 60? The clock is ticking.\n\nAre you truly ready to gamble your future on the hope of tomorrow's income? The sooner you act and address this gap, the better. An open loop awaits your move.",
+            "timestamp": "2025-06-15T17:05:12.644Z"
+          },
+          "webhookUrl": "https://liammatthes.app.n8n.cloud/webhook/1f0ba9d4-502d-4a60-b4e9-ee7e1d9a1040",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "GitHub Push Trigger": [
+      {
+        "json": {
+          "headers": {
+            "host": "liammatthes.app.n8n.cloud",
+            "user-agent": "GitHub-Hookshot/fb6e15e",
+            "content-length": "8026",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "140.82.115.79",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "US",
+            "cf-ray": "952da1cdc3921740-IAD",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "x-forwarded-for": "140.82.115.79, 172.71.194.4",
+            "x-forwarded-host": "liammatthes.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-53-77dd8844d7-bz7s7",
+            "x-github-delivery": "d4025646-4e0b-11f0-8e91-03ca6a1557df",
+            "x-github-event": "push",
+            "x-github-hook-id": "553407687",
+            "x-github-hook-installation-target-id": "1005332002",
+            "x-github-hook-installation-target-type": "repository",
+            "x-is-trusted": "yes",
+            "x-real-ip": "140.82.115.79"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "ref": "refs/heads/main",
+            "before": "65e18579834104b249157ede76fa6d6f18bb7e2e",
+            "after": "eabcd09fca4879fbde4066cd5ddc8b7fb6b17001",
+            "repository": {
+              "id": 1005332002,
+              "node_id": "R_kgDOO-wmIg",
+              "name": "E.HHoward",
+              "full_name": "liamjahnkematthes/E.HHoward",
+              "private": true,
+              "owner": {
+                "name": "liamjahnkematthes",
+                "email": "liam@wine-haul.com",
+                "login": "liamjahnkematthes",
+                "id": 211451717,
+                "node_id": "U_kgDODJp_RQ",
+                "avatar_url": "https://avatars.githubusercontent.com/u/211451717?v=4",
+                "gravatar_id": "",
+                "url": "https://api.github.com/users/liamjahnkematthes",
+                "html_url": "https://github.com/liamjahnkematthes",
+                "followers_url": "https://api.github.com/users/liamjahnkematthes/followers",
+                "following_url": "https://api.github.com/users/liamjahnkematthes/following{/other_user}",
+                "gists_url": "https://api.github.com/users/liamjahnkematthes/gists{/gist_id}",
+                "starred_url": "https://api.github.com/users/liamjahnkematthes/starred{/owner}{/repo}",
+                "subscriptions_url": "https://api.github.com/users/liamjahnkematthes/subscriptions",
+                "organizations_url": "https://api.github.com/users/liamjahnkematthes/orgs",
+                "repos_url": "https://api.github.com/users/liamjahnkematthes/repos",
+                "events_url": "https://api.github.com/users/liamjahnkematthes/events{/privacy}",
+                "received_events_url": "https://api.github.com/users/liamjahnkematthes/received_events",
+                "type": "User",
+                "user_view_type": "public",
+                "site_admin": false
+              },
+              "html_url": "https://github.com/liamjahnkematthes/E.HHoward",
+              "description": "Eli Howard wealth managment ",
+              "fork": false,
+              "url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward",
+              "forks_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/forks",
+              "keys_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/keys{/key_id}",
+              "collaborators_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/collaborators{/collaborator}",
+              "teams_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/teams",
+              "hooks_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/hooks",
+              "issue_events_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/issues/events{/number}",
+              "events_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/events",
+              "assignees_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/assignees{/user}",
+              "branches_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/branches{/branch}",
+              "tags_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/tags",
+              "blobs_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/git/blobs{/sha}",
+              "git_tags_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/git/tags{/sha}",
+              "git_refs_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/git/refs{/sha}",
+              "trees_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/git/trees{/sha}",
+              "statuses_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/statuses/{sha}",
+              "languages_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/languages",
+              "stargazers_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/stargazers",
+              "contributors_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/contributors",
+              "subscribers_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/subscribers",
+              "subscription_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/subscription",
+              "commits_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/commits{/sha}",
+              "git_commits_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/git/commits{/sha}",
+              "comments_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/comments{/number}",
+              "issue_comment_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/issues/comments{/number}",
+              "contents_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/contents/{+path}",
+              "compare_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/compare/{base}...{head}",
+              "merges_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/merges",
+              "archive_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/{archive_format}{/ref}",
+              "downloads_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/downloads",
+              "issues_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/issues{/number}",
+              "pulls_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/pulls{/number}",
+              "milestones_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/milestones{/number}",
+              "notifications_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/notifications{?since,all,participating}",
+              "labels_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/labels{/name}",
+              "releases_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/releases{/id}",
+              "deployments_url": "https://api.github.com/repos/liamjahnkematthes/E.HHoward/deployments",
+              "created_at": 1750393032,
+              "updated_at": "2025-06-20T19:20:46Z",
+              "pushed_at": 1750447315,
+              "git_url": "git://github.com/liamjahnkematthes/E.HHoward.git",
+              "ssh_url": "git@github.com:liamjahnkematthes/E.HHoward.git",
+              "clone_url": "https://github.com/liamjahnkematthes/E.HHoward.git",
+              "svn_url": "https://github.com/liamjahnkematthes/E.HHoward",
+              "homepage": null,
+              "size": 27,
+              "stargazers_count": 0,
+              "watchers_count": 0,
+              "language": "HTML",
+              "has_issues": true,
+              "has_projects": true,
+              "has_downloads": true,
+              "has_wiki": false,
+              "has_pages": false,
+              "has_discussions": false,
+              "forks_count": 0,
+              "mirror_url": null,
+              "archived": false,
+              "disabled": false,
+              "open_issues_count": 0,
+              "license": null,
+              "allow_forking": true,
+              "is_template": false,
+              "web_commit_signoff_required": false,
+              "topics": [],
+              "visibility": "private",
+              "forks": 0,
+              "open_issues": 0,
+              "watchers": 0,
+              "default_branch": "main",
+              "stargazers": 0,
+              "master_branch": "main"
+            },
+            "pusher": {
+              "name": "liamjahnkematthes",
+              "email": "liam@wine-haul.com"
+            },
+            "sender": {
+              "login": "liamjahnkematthes",
+              "id": 211451717,
+              "node_id": "U_kgDODJp_RQ",
+              "avatar_url": "https://avatars.githubusercontent.com/u/211451717?v=4",
+              "gravatar_id": "",
+              "url": "https://api.github.com/users/liamjahnkematthes",
+              "html_url": "https://github.com/liamjahnkematthes",
+              "followers_url": "https://api.github.com/users/liamjahnkematthes/followers",
+              "following_url": "https://api.github.com/users/liamjahnkematthes/following{/other_user}",
+              "gists_url": "https://api.github.com/users/liamjahnkematthes/gists{/gist_id}",
+              "starred_url": "https://api.github.com/users/liamjahnkematthes/starred{/owner}{/repo}",
+              "subscriptions_url": "https://api.github.com/users/liamjahnkematthes/subscriptions",
+              "organizations_url": "https://api.github.com/users/liamjahnkematthes/orgs",
+              "repos_url": "https://api.github.com/users/liamjahnkematthes/repos",
+              "events_url": "https://api.github.com/users/liamjahnkematthes/events{/privacy}",
+              "received_events_url": "https://api.github.com/users/liamjahnkematthes/received_events",
+              "type": "User",
+              "user_view_type": "public",
+              "site_admin": false
+            },
+            "created": false,
+            "deleted": false,
+            "forced": false,
+            "base_ref": null,
+            "compare": "https://github.com/liamjahnkematthes/E.HHoward/compare/65e185798341...eabcd09fca48",
+            "commits": [
+              {
+                "id": "eabcd09fca4879fbde4066cd5ddc8b7fb6b17001",
+                "tree_id": "355b8db54a5fa686383ece85480c1249aa3d46dd",
+                "distinct": true,
+                "message": "Update Wealth_Managment (14).json\n\n6",
+                "timestamp": "2025-06-20T14:21:55-05:00",
+                "url": "https://github.com/liamjahnkematthes/E.HHoward/commit/eabcd09fca4879fbde4066cd5ddc8b7fb6b17001",
+                "author": {
+                  "name": "liamjahnkematthes",
+                  "email": "liam@wine-haul.com",
+                  "username": "liamjahnkematthes"
+                },
+                "committer": {
+                  "name": "GitHub",
+                  "email": "noreply@github.com",
+                  "username": "web-flow"
+                },
+                "added": [],
+                "removed": [],
+                "modified": [
+                  "Wealth_Managment (14).json"
+                ]
+              }
+            ],
+            "head_commit": {
+              "id": "eabcd09fca4879fbde4066cd5ddc8b7fb6b17001",
+              "tree_id": "355b8db54a5fa686383ece85480c1249aa3d46dd",
+              "distinct": true,
+              "message": "Update Wealth_Managment (14).json\n\n6",
+              "timestamp": "2025-06-20T14:21:55-05:00",
+              "url": "https://github.com/liamjahnkematthes/E.HHoward/commit/eabcd09fca4879fbde4066cd5ddc8b7fb6b17001",
+              "author": {
+                "name": "liamjahnkematthes",
+                "email": "liam@wine-haul.com",
+                "username": "liamjahnkematthes"
+              },
+              "committer": {
+                "name": "GitHub",
+                "email": "noreply@github.com",
+                "username": "web-flow"
+              },
+              "added": [],
+              "removed": [],
+              "modified": [
+                "Wealth_Managment (14).json"
+              ]
+            }
+          },
+          "webhookUrl": "https://liammatthes.app.n8n.cloud/webhook/github-update",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insight Generator": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Generator": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Insight Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retirement-email": {
+      "main": [
+        [
+          {
+            "node": "Quick Confirm Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate PDF Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call n8n Workflow Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Insight Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PDF-Completer": {
+      "main": [
+        [
+          {
+            "node": "Download-PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download-PDF": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GoHighLevel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF Payload": {
+      "main": [
+        [
+          {
+            "node": "PDF-Completer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Insight Payload": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quick Confirm Response": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Insight Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GoHighLevel": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub Push Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Workflow JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Workflow JSON": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bb4c56d5-7d50-4c7e-85e4-13a5cdd0e6dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "fdf1373d3ef94b20d766bc6d83a4526d9ce205192f3c46882423aab02401ef2a"
+  },
+  "id": "Cbpbf2HMEupUlEaK",
+  "tags": []
+}
