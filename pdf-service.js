@@ -46,12 +46,19 @@ app.post('/generate-retirement-pdf', async (req, res) => {
     // Create PDF
     const pdfBuffer = await createPDF(data, projections, charts);
     
-    // Return PDF as base64 for N8N
+    // Return PDF as base64 for N8N with cache-busting headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     res.json({
       success: true,
       pdf: pdfBuffer.toString('base64'),
       fileName: `Retirement_Analyzer_${data.name.replace(/\s+/g, '_')}.pdf`,
-      mimeType: 'application/pdf'
+      mimeType: 'application/pdf',
+      timestamp: new Date().toISOString() // Add timestamp for debugging
     });
 
   } catch (error) {
@@ -448,16 +455,18 @@ async function generateCharts(projections, data) {
       }
     };
 
-    // Generate chart URLs using GET method with encoded chart config
-    const lifecycleUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(lifecycleChart))}&w=600&h=300&f=png`;
-    const comparisonUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(comparisonChart))}&w=600&h=300&f=png`;
-    const retirementGraphUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(threeLayerChart))}&w=700&h=400&f=png`;
+    // Generate chart URLs using GET method with encoded chart config + CACHE BUSTING
+    const timestamp = Date.now(); // Add timestamp to prevent caching
+    const lifecycleUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(lifecycleChart))}&w=600&h=300&f=png&t=${timestamp}`;
+    const comparisonUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(comparisonChart))}&w=600&h=300&f=png&t=${timestamp}`;
+    const retirementGraphUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(threeLayerChart))}&w=700&h=400&f=png&t=${timestamp}`;
     
-    console.log('✅ All charts generated successfully!');
-    console.log('📊 Chart URLs:', {
+    console.log('✅ All charts generated successfully with cache busting!');
+    console.log('📊 Chart URLs with timestamp:', {
       lifecycle: lifecycleUrl,
       comparison: comparisonUrl,
-      retirementGraph: retirementGraphUrl
+      retirementGraph: retirementGraphUrl,
+      timestamp: new Date(timestamp).toISOString()
     });
     
     return {
