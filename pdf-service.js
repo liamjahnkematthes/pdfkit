@@ -4,7 +4,7 @@
  */
 
 const express = require('express');
-const PDFDocument = require('./lib/document');
+const PDFDocument = require('pdfkit');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
