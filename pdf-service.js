@@ -409,7 +409,7 @@ async function generateCharts(projections, data) {
             },
             ticks: {
               font: {
-                size: 18,  // Even bigger x-axis labels
+                size: 24,  // Much bigger x-axis labels (was 18pt)
                 weight: 'bold'
               },
               color: '#1e2a45'
@@ -421,7 +421,7 @@ async function generateCharts(projections, data) {
             },
             ticks: {
               font: {
-                size: 14,  // Bigger y-axis labels
+                size: 20,  // Much bigger y-axis labels (was 14pt)
                 weight: 'bold'
               },
               color: '#1e2a45',
@@ -571,7 +571,7 @@ async function renderPDF(doc, data, projections, charts) {
   
   // 3. RETIREMENT TIMELINE
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
-  yPos += 25;
+  yPos += 40; // Increased spacing from 25px to 40px to prevent overlap
   
   // Draw timeline with 4 phases - Fixed spacing
   const timelineY = yPos;
@@ -596,13 +596,13 @@ async function renderPDF(doc, data, projections, charts) {
     // Draw phase milestone circles
     doc.circle(phaseX, timelineY, 6).fillColor('#2a73d2').fill();
     
-    // Phase name (bold, 14pt - much bigger and more obvious)
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 15, { width: 90, align: 'center' });
+    // Phase name (bold, 14pt - positioned lower to prevent overlap with title)
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 20, { width: 90, align: 'center' });
     
-    // Phase description (12pt, gray - bigger for better readability)
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 45, { width: 110, align: 'center' });
+    // Phase description (12pt, gray - positioned even lower for clear separation)
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 55, { width: 110, align: 'center' });
   });
-  yPos += 120; // Much more space needed for bigger text and to prevent overlap
+  yPos += 140; // Increased spacing from 120px to 140px for better separation
   
   // 4. RETIREMENT GRAPH (3-layer area chart only)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
