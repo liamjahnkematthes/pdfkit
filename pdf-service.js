@@ -289,20 +289,20 @@ async function generateCharts(projections, data) {
     // Calculate 3-account allocation across lifecycle phases
     const lifecyclePhases = ['Accumulation', 'Retirement Planning', 'Distribution', 'Wealth Transfer'];
     
-    // Dynamic account values that all start from zero
-    const maxValue = Math.max(projections.totalAtRetirement, data.savings * 5);
-    const chartScaleFactor = 100 / maxValue;
+    // Dynamic account values based on user's actual financial scale
+    const basePortfolio = Math.max(data.savings, 100000);
+    const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * 3);
     
-    // Account values that grow from zero across phases
+    // Account values that grow from zero across phases (in actual dollars)
     const accountData = [
       // Accumulation: Starting to build
       { preTax: 0, roth: 0, brokerage: 0 },
       // Retirement Planning: Growing significantly  
-      { preTax: 30, roth: 50, brokerage: 70 },
+      { preTax: peakPortfolio * 0.3, roth: peakPortfolio * 0.5, brokerage: peakPortfolio * 0.7 },
       // Distribution: Peak values
-      { preTax: 40, roth: 65, brokerage: 85 },
+      { preTax: peakPortfolio * 0.4, roth: peakPortfolio * 0.65, brokerage: peakPortfolio * 0.85 },
       // Wealth Transfer: Drawing down
-      { preTax: 25, roth: 45, brokerage: 60 }
+      { preTax: peakPortfolio * 0.25, roth: peakPortfolio * 0.45, brokerage: peakPortfolio * 0.6 }
     ];
     
     const threeLayerChart = {
@@ -346,15 +346,7 @@ async function generateCharts(projections, data) {
         responsive: true,
         plugins: {
           title: {
-            display: true,
-            text: 'Retirement Graph',
-            font: { 
-              size: 20, 
-              weight: 'bold',
-              family: 'Arial'
-            },
-            color: '#001f54',
-            padding: 20
+            display: false  // Remove redundant title
           },
           legend: {
             display: true,
@@ -385,7 +377,7 @@ async function generateCharts(projections, data) {
             },
             ticks: {
               font: {
-                size: 16,  // Much bigger labels
+                size: 18,  // Even bigger x-axis labels
                 weight: 'bold'
               },
               color: '#1e2a45'
@@ -393,24 +385,24 @@ async function generateCharts(projections, data) {
           },
           y: {
             min: 0,
-            max: 100,
             beginAtZero: true,
             title: {
-              display: true,
-              text: 'Relative Dollar Value',
-              font: { weight: 'bold', size: 12 }
+              display: false
             },
             ticks: {
-              stepSize: 20,
+              font: {
+                size: 14,  // Bigger y-axis labels
+                weight: 'bold'
+              },
+              color: '#1e2a45',
               callback: function(value) {
-                // Dynamic formatting based on user's financial scale
-                const actualValue = (value / 100) * maxValue;
-                if (actualValue >= 1000000) {
-                  return '$' + (actualValue/1000000).toFixed(1) + 'M';
-                } else if (actualValue >= 1000) {
-                  return '$' + (actualValue/1000).toFixed(0) + 'K';
+                // Show actual dollar values based on user's scale
+                if (value >= 1000000) {
+                  return '$' + (value/1000000).toFixed(1) + 'M';
+                } else if (value >= 1000) {
+                  return '$' + Math.round(value/1000) + 'K';
                 } else {
-                  return '$' + actualValue.toFixed(0);
+                  return '$' + Math.round(value);
                 }
               }
             },
@@ -523,39 +515,15 @@ async function renderPDF(doc, data, projections, charts) {
      .fillColor('#1e2a45')
      .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
   
-  // Personal Info Table (top section) - Fixed overlap
+  // Skip Personal Info Table - go straight to Retirement Insight
   let yPos = 130;
-  doc.fontSize(14).fillColor('#1e2a45').text('Personal Info', margin, yPos);
-  yPos += 25;
   
-  // Create table headers with borders
-  const tableHeaders = ['Name', 'Age', 'Annual Income', 'Retirement Savings', 'Retirement Age', 'Lifestyle Goal'];
-  const tableValues = [data.name, data.age, `$${data.income.toLocaleString()}`, `$${data.savings.toLocaleString()}`, data.retireAge, data.lifestyle];
-  const cellWidth = contentWidth / 6;
-  
-  // Header row with blue background
-  doc.rect(margin, yPos, contentWidth, 30).fillColor('#2a73d2').fill(); // Increased height
-  doc.fontSize(9).fillColor('#ffffff'); // Smaller font
-  tableHeaders.forEach((header, i) => {
-    doc.text(header, margin + (i * cellWidth) + 3, yPos + 10, { width: cellWidth - 6 });
-  });
-  yPos += 30;
-  
-  // Data row with white background and borders
-  doc.rect(margin, yPos, contentWidth, 30).fillColor('#ffffff').fill(); // Increased height
-  doc.rect(margin, yPos, contentWidth, 30).strokeColor('#cccccc').stroke();
-  doc.fontSize(9).fillColor('#1e2a45'); // Smaller font
-  tableValues.forEach((value, i) => {
-    doc.text(value.toString(), margin + (i * cellWidth) + 3, yPos + 10, { width: cellWidth - 6 });
-  });
-  yPos += 40; // More space after table
-  
-  // 2. RETIREMENT INSIGHT BOX (using data.summary)
+  // 2. RETIREMENT INSIGHT BOX (moved up)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
   yPos += 20;
   
   // Bordered insight box
-  const insightHeight = 60;
+  const insightHeight = 70;
   doc.rect(margin, yPos, contentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
   doc.rect(margin, yPos, contentWidth, insightHeight).fillColor('#fdfdfd').fill();
   
@@ -567,7 +535,7 @@ async function renderPDF(doc, data, projections, charts) {
              width: contentWidth - 30, 
              lineGap: 2 
            });
-  yPos += insightHeight + 25;
+  yPos += insightHeight + 35; // More spacing before timeline
   
   // 3. RETIREMENT TIMELINE
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
