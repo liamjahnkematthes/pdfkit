@@ -139,42 +139,96 @@ async function generateCharts(projections, data) {
       }
     });
     
-    // Lifecycle Portfolio Chart
+    // 3-Layer Retirement Graph with Pre-tax, Roth, Brokerage
+    const lifeStages = ['Accumulation', 'Retirement Planning', 'Distribution', 'Wealth Transfer'];
+    const totalByStage = [
+      projections.totalAtRetirement * 0.3,  // Accumulation
+      projections.totalAtRetirement * 0.8,  // Retirement Planning  
+      projections.totalAtRetirement * 1.0,  // Distribution
+      projections.totalAtRetirement * 0.6   // Wealth Transfer
+    ];
+    
+    // Split total into 3 account types
+    const preTaxData = totalByStage.map(total => total * 0.5);  // 50% Pre-tax
+    const rothData = totalByStage.map(total => total * 0.3);    // 30% Roth  
+    const brokerageData = totalByStage.map(total => total * 0.2); // 20% Brokerage
+    
     const lifecycleChart = {
       type: 'line',
       data: {
-        labels: ages,
-        datasets: [{
-          label: 'Portfolio Value',
-          data: values,
-          borderColor: 'rgb(66, 133, 244)',
-          backgroundColor: 'rgba(66, 133, 244, 0.1)',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4
-        }]
+        labels: lifeStages,
+        datasets: [
+          {
+            label: 'Pre-Tax',
+            data: preTaxData,
+            backgroundColor: 'rgba(0, 191, 165, 0.6)',  // Teal (Pre-tax color from example)
+            borderColor: 'rgba(0, 191, 165, 1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Roth', 
+            data: rothData,
+            backgroundColor: 'rgba(66, 133, 244, 0.6)',  // Blue (Roth color from example)
+            borderColor: 'rgba(66, 133, 244, 1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Brokerage',
+            data: brokerageData,
+            backgroundColor: 'rgba(156, 39, 176, 0.6)',  // Purple (Brokerage color from example)
+            borderColor: 'rgba(156, 39, 176, 1)', 
+            fill: true,
+            tension: 0.4
+          }
+        ]
       },
       options: {
         responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
         plugins: {
-          title: {
+          legend: {
             display: true,
-            text: 'Retirement Lifecycle Portfolio',
-            font: { size: 16, weight: 'bold' }
-          },
-          legend: { display: false }
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 15
+            }
+          }
         },
         scales: {
           x: {
-            title: { display: true, text: 'Age' }
+            display: true,
+            title: {
+              display: false
+            },
+            grid: {
+              display: false
+            },
+            ticks: {
+              display: false  // Remove numbers from x-axis
+            }
           },
           y: {
-            title: { display: true, text: 'Portfolio Value ($)' },
+            display: true,
+            stacked: true,
+            title: {
+              display: false
+            },
             ticks: {
               callback: function(value) {
                 return '$' + (value/1000000).toFixed(1) + 'M';
               }
             }
+          }
+        },
+        elements: {
+          point: {
+            radius: 0
           }
         }
       }
@@ -259,7 +313,7 @@ async function generateCharts(projections, data) {
       };
     });
     
-    const retirementGraph = {
+    const threeLayerChart = {
       type: 'line',
       data: {
         labels: lifecyclePhases,
@@ -338,6 +392,9 @@ async function generateCharts(projections, data) {
             },
             grid: {
               display: false
+            },
+            ticks: {
+              display: false  // Remove numbers from x-axis
             }
           },
           y: {
@@ -378,7 +435,7 @@ async function generateCharts(projections, data) {
     // Generate chart URLs using GET method with encoded chart config
     const lifecycleUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(lifecycleChart))}&w=600&h=300&f=png`;
     const comparisonUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(comparisonChart))}&w=600&h=300&f=png`;
-    const retirementGraphUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(retirementGraph))}&w=700&h=400&f=png`;
+    const retirementGraphUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(threeLayerChart))}&w=700&h=400&f=png`;
     
     console.log('✅ All charts generated successfully!');
     console.log('📊 Chart URLs:', {
@@ -410,7 +467,7 @@ async function createPDF(data, projections, charts) {
         margin: 40,
         info: {
           Title: `Retirement Analysis - ${data.name}`,
-          Author: 'E.H. Howard & Associates',
+          Author: 'E.H. Howard Wealth Management',
           Subject: 'Professional Retirement Planning Analysis'
         }
       });
@@ -432,204 +489,175 @@ async function createPDF(data, projections, charts) {
 }
 
 /**
- * Render PDF content with professional styling
+ * Render clean 2-page "Retirement Analyzer" PDF
  */
 async function renderPDF(doc, data, projections, charts) {
-  const pageWidth = doc.page.width - 80; // Account for margins
+  const pageWidth = doc.page.width;
+  const margin = 72; // 1 inch margins
+  const contentWidth = pageWidth - (margin * 2);
   
-  // Professional Header with company branding
-  doc.fontSize(26)
-     .fillColor('#1a365d')
-     .text('E.H. HOWARD & ASSOCIATES', 40, 40, { align: 'center' });
+  // PAGE 1 - MAIN ANALYSIS
   
-  doc.fontSize(14)
-     .fillColor('#4a5568')
-     .text('Professional Retirement Analysis Report', 40, 75, { align: 'center' });
+  // 1. TOP BRANDING - Company name and title
+  doc.fontSize(18).fillColor('#1e2a45').text('E.H. HOWARD WEALTH MANAGEMENT', margin, 40, { align: 'center', width: contentWidth });
   
-  // Add subtle line under header
-  doc.moveTo(40, 95).lineTo(pageWidth + 40, 95).strokeColor('#e2e8f0').lineWidth(2).stroke();
+  // Center title "Retirement Analyzer"
+  doc.fontSize(24)
+     .fillColor('#1e2a45')
+     .text('Retirement Analyzer', margin, 100, { align: 'center', width: contentWidth });
   
-  // Client info section with professional styling
-  doc.fontSize(20)
-     .fillColor('#2d3748')
-     .text(`Retirement Analysis for ${data.name}`, 40, 115);
-  
-  // Status badge with better styling
-  const statusColor = projections.status === 'on_track' ? '#38a169' : '#e53e3e';
-  const statusText = projections.status === 'on_track' ? 'ON TRACK ✓' : 'NEEDS ATTENTION ⚠';
-  const statusBgColor = projections.status === 'on_track' ? '#f0fff4' : '#fef5e7';
-  
-  // Status badge background
-  doc.roundedRect(40, 145, 150, 25, 5).fillColor(statusBgColor).fill();
-  doc.roundedRect(40, 145, 150, 25, 5).strokeColor(statusColor).lineWidth(2).stroke();
-  
-  doc.fontSize(12)
-     .fillColor(statusColor)
-     .text(`STATUS: ${statusText}`, 50, 154);
-  
-  // Summary metrics in organized table format
-  let yPos = 190;
-  doc.fontSize(16).fillColor('#1a365d').text('Client Summary', 40, yPos);
+  // Personal Info Table (top section)
+  let yPos = 150;
+  doc.fontSize(14).fillColor('#1e2a45').text('Personal Info', margin, yPos);
   yPos += 25;
   
-  // Create a neat table layout
-  const tableData = [
-    ['Current Age:', data.age.toString()],
-    ['Target Retirement Age:', data.retireAge.toString()],
-    ['Current Annual Income:', `$${data.income.toLocaleString()}`],
-    ['Current Savings:', `$${data.savings.toLocaleString()}`],
-    ['Years to Retirement:', projections.yearsToRetire.toString()],
-    ['Target Retirement Income:', `$${Math.round(projections.targetIncome).toLocaleString()}`]
-  ];
+  // Create table headers with borders
+  const tableHeaders = ['Name', 'Age', 'Annual Income', 'Retirement Savings', 'Retirement Age', 'Lifestyle Goal'];
+  const tableValues = [data.name, data.age, `$${data.income.toLocaleString()}`, `$${data.savings.toLocaleString()}`, data.retireAge, data.lifestyle];
+  const cellWidth = contentWidth / 6;
   
-  doc.fontSize(12).fillColor('#2d3748');
-  tableData.forEach((row, index) => {
-    const rowY = yPos + (index * 20);
-    // Alternating row colors
-    if (index % 2 === 0) {
-      doc.rect(40, rowY - 2, pageWidth, 18).fillColor('#f7fafc').fill();
-    }
-    doc.text(row[0], 50, rowY, { width: 200 });
-    doc.text(row[1], 300, rowY, { width: 200 });
+  // Header row with blue background
+  doc.rect(margin, yPos, contentWidth, 25).fillColor('#2a73d2').fill();
+  doc.fontSize(10).fillColor('#ffffff');
+  tableHeaders.forEach((header, i) => {
+    doc.text(header, margin + (i * cellWidth) + 5, yPos + 8, { width: cellWidth - 10 });
   });
+  yPos += 25;
   
-  yPos += tableData.length * 20 + 30;
+  // Data row with white background and borders
+  doc.rect(margin, yPos, contentWidth, 25).fillColor('#ffffff').fill();
+  doc.rect(margin, yPos, contentWidth, 25).strokeColor('#cccccc').stroke();
+  doc.fontSize(10).fillColor('#1e2a45');
+  tableValues.forEach((value, i) => {
+    doc.text(value.toString(), margin + (i * cellWidth) + 5, yPos + 8, { width: cellWidth - 10 });
+  });
+  yPos += 45;
   
-  // Key projections section with emphasis
-  doc.fontSize(16)
-     .fillColor('#1a365d')
-     .text('Retirement Projections', 40, yPos);
+  // 2. RETIREMENT INSIGHT BOX (using data.summary)
+  doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
+  yPos += 20;
+  
+  // Bordered insight box
+  const insightHeight = 80;
+  doc.rect(margin, yPos, contentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
+  doc.rect(margin, yPos, contentWidth, insightHeight).fillColor('#fdfdfd').fill();
+  
+  // Add the AI-generated summary text from data.summary
+  doc.fontSize(11)
+     .fillColor('#1e2a45')
+     .text(data.summary || 'Your personalized retirement insight will appear here...', 
+           margin + 15, yPos + 15, { 
+             width: contentWidth - 30, 
+             lineGap: 2 
+           });
+  yPos += insightHeight + 30;
+  
+  // 3. RETIREMENT TIMELINE
+  doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
   yPos += 30;
   
-  // Highlight boxes for key metrics
-  const metrics = [
-    { label: 'Portfolio at Retirement', value: `$${Math.round(projections.totalAtRetirement).toLocaleString()}`, color: '#38a169' },
-    { label: 'Annual Retirement Income', value: `$${Math.round(projections.projectedIncome).toLocaleString()}`, color: '#3182ce' }
+  // Draw timeline with 4 phases
+  const timelineY = yPos;
+  const timelineWidth = contentWidth - 40;
+  const phaseWidth = timelineWidth / 4;
+  const phases = [
+    { name: 'Accumulation\nPhase', desc: 'The Accumulation phase of your investment life is from when you begin investing until you are 5 years from your retirement age.' },
+    { name: 'Retirement\nPlanning', desc: 'When you are 5 years away from retirement then it is important to consider in-depth retirement planning.' },
+    { name: 'Distribution\nPhase', desc: 'In the Distribution Phase, we have entered retirement and are taking retirement income.' },
+    { name: 'Generational\nWealth Transfer', desc: 'After the Distribution Phase has ended, we look to have an efficient passing down of generational wealth to your beneficiaries.' }
   ];
   
-  metrics.forEach((metric, index) => {
-    const boxX = 40 + (index * (pageWidth / 2 + 10));
-    const boxWidth = pageWidth / 2 - 20;
+  // Draw main timeline line
+  doc.moveTo(margin + 20, timelineY).lineTo(margin + timelineWidth, timelineY).strokeColor('#2a73d2').lineWidth(3).stroke();
+  
+  phases.forEach((phase, i) => {
+    const phaseX = margin + 20 + (i * phaseWidth);
     
-    // Metric box with border
-    doc.roundedRect(boxX, yPos, boxWidth, 50, 8).fillColor('#f7fafc').fill();
-    doc.roundedRect(boxX, yPos, boxWidth, 50, 8).strokeColor(metric.color).lineWidth(2).stroke();
+    // Draw phase milestone circles
+    doc.circle(phaseX, timelineY, 8).fillColor('#2a73d2').fill();
     
-    doc.fontSize(10).fillColor('#4a5568').text(metric.label, boxX + 10, yPos + 10);
-    doc.fontSize(16).fillColor(metric.color).text(metric.value, boxX + 10, yPos + 25);
+    // Phase name (bold, 12pt)
+    doc.fontSize(10).fillColor('#1e2a45').text(phase.name, phaseX - 40, timelineY + 20, { width: 80, align: 'center' });
+    
+    // Phase description (8pt, gray)
+    doc.fontSize(8).fillColor('#666666').text(phase.desc, phaseX - 60, timelineY + 50, { width: 120, align: 'center' });
   });
+  yPos += 140;
   
-  yPos += 70;
+  // 4. RETIREMENT GRAPH (3-layer area chart only)
+  doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
+  yPos += 20;
   
-  // Add charts with proper spacing and titles
-  console.log('📊 Charts available:', { 
-    lifecycle: !!charts.lifecycle, 
-    comparison: !!charts.comparison,
-    retirementGraph: !!charts.retirementGraph 
-  });
-  
-  if (charts.lifecycle) {
-    try {
-      console.log('📈 Adding lifecycle chart:', charts.lifecycle);
-      doc.fontSize(14).fillColor('#1a365d').text('Portfolio Growth Over Time', 40, yPos);
-      yPos += 20;
-      
-      const lifecycleResponse = await axios.get(charts.lifecycle, { responseType: 'arraybuffer' });
-      const lifecycleBuffer = Buffer.from(lifecycleResponse.data);
-      console.log('✅ Lifecycle chart loaded, size:', lifecycleBuffer.length);
-      doc.image(lifecycleBuffer, 40, yPos, { width: pageWidth * 0.95 });
-      yPos += 220;
-    } catch (error) {
-      console.error('❌ Could not load lifecycle chart:', error.message);
-      yPos += 20;
-    }
-  }
-  
-  if (charts.comparison) {
-    try {
-      doc.fontSize(14).fillColor('#1a365d').text('Retirement Readiness Analysis', 40, yPos);
-      yPos += 20;
-      
-      const comparisonResponse = await axios.get(charts.comparison, { responseType: 'arraybuffer' });
-      const comparisonBuffer = Buffer.from(comparisonResponse.data);
-      doc.image(comparisonBuffer, 40, yPos, { width: pageWidth * 0.95 });
-      yPos += 220;
-    } catch (error) {
-      console.log('Could not load comparison chart');
-      yPos += 20;
-    }
-  }
-  
-  // Add the sophisticated 3-layer retirement graph
+  // Only add the 3-layer retirement graph
   if (charts.retirementGraph) {
     try {
-      doc.fontSize(14).fillColor('#1a365d').text('Three-Account Retirement Strategy', 40, yPos);
-      yPos += 20;
-      
-      const retirementGraphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
-      const retirementGraphBuffer = Buffer.from(retirementGraphResponse.data);
-      doc.image(retirementGraphBuffer, 40, yPos, { width: pageWidth * 0.95 });
-      yPos += 250;
+      const graphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
+      const graphBuffer = Buffer.from(graphResponse.data);
+      doc.image(graphBuffer, margin, yPos, { width: contentWidth });
+      yPos += 200;
     } catch (error) {
       console.log('Could not load retirement graph');
-      yPos += 20;
+      yPos += 200;
     }
   }
   
-  // Professional advice section
-  doc.fontSize(14).fillColor('#1a365d').text('Professional Recommendations', 40, yPos);
+  // 5. PROFESSIONAL TIPS SECTION
+  doc.fontSize(16).fillColor('#1e2a45').text('Professional Tips', margin, yPos);
   yPos += 25;
   
-  const recommendations = [
-    '• Maintain a diversified portfolio across multiple account types',
-    '• Consider maximizing contributions to tax-advantaged accounts',
-    '• Review and adjust your retirement plan annually',
-    '• Plan for healthcare costs in retirement',
-    '• Consider working with a financial advisor for personalized guidance'
+  const tips = [
+    'Save early and often',
+    'Utilize retirement savings through Pre-Tax, Roth and Brokerage Accounts',
+    'Minimize market volatility in Retirement Planning and Distribution Phases',
+    'Plan to withdraw 4-5% of total portfolio for retirement income',
+    'Use a financial professional'
   ];
   
-  doc.fontSize(11).fillColor('#2d3748');
-  recommendations.forEach(rec => {
-    doc.text(rec, 50, yPos, { width: pageWidth - 20 });
+  doc.fontSize(10).fillColor('#1e2a45');
+  tips.forEach(tip => {
+    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40 });
     yPos += 18;
   });
   
-  yPos += 20;
+  // Check if we need a second page
+  if (yPos > doc.page.height - 150) {
+    doc.addPage();
+    yPos = margin;
+  } else {
+    yPos += 40;
+  }
   
-  // Call-to-action section
-  doc.fontSize(16).fillColor('#1a365d').text('Next Steps', 40, yPos);
-  yPos += 25;
+  // 6. MORE RESOURCES SECTION
+  doc.fontSize(16).fillColor('#1e2a45').text('More Resources', margin, yPos);
+  yPos += 30;
   
-  // Professional contact buttons/links
-  const buttonWidth = 160;
-  const buttonHeight = 35;
-  const buttonSpacing = 20;
+  // Website link
+  doc.fontSize(12).fillColor('#2a73d2')
+     .text('ehhowardwealth.com', margin, yPos, { align: 'center', width: contentWidth });
+  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
+  yPos += 30;
   
-  // Schedule consultation button
-  doc.roundedRect(40, yPos, buttonWidth, buttonHeight, 8).fillColor('#3182ce').fill();
-  doc.fontSize(12).fillColor('#ffffff').text('Schedule Consultation', 50, yPos + 12);
-  doc.link(40, yPos, buttonWidth, buttonHeight, 'https://ehhowardwealth.com/consultation');
+  // 7. BOTTOM CALLS TO ACTION - Two buttons side by side
+  const buttonWidth = (contentWidth - 20) / 2;
+  const buttonHeight = 45;
   
-  // Website link button
-  doc.roundedRect(40 + buttonWidth + buttonSpacing, yPos, buttonWidth, buttonHeight, 8).fillColor('#38a169').fill();
-  doc.fontSize(12).fillColor('#ffffff').text('Visit Our Website', 50 + buttonWidth + buttonSpacing, yPos + 12);
-  doc.link(40 + buttonWidth + buttonSpacing, yPos, buttonWidth, buttonHeight, 'https://ehhowardwealth.com');
+  // Left button - Webinar
+  doc.roundedRect(margin, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
+  doc.fontSize(12).fillColor('#ffffff')
+     .text('The Intelligent Retirement\nWebinar', margin + 15, yPos + 15, { width: buttonWidth - 30, align: 'center' });
+  doc.link(margin, yPos, buttonWidth, buttonHeight, 'https://theintelligentretirement.com/webinar');
   
-  // Educational webinar button  
-  doc.roundedRect(40 + (buttonWidth + buttonSpacing) * 2, yPos, buttonWidth, buttonHeight, 8).fillColor('#805ad5').fill();
-  doc.fontSize(12).fillColor('#ffffff').text('Retirement Webinar', 50 + (buttonWidth + buttonSpacing) * 2, yPos + 12);
-  doc.link(40 + (buttonWidth + buttonSpacing) * 2, yPos, buttonWidth, buttonHeight, 'https://ehhowardwealth.com/webinar');
+  // Right button - Consultation  
+  doc.roundedRect(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
+  doc.fontSize(12).fillColor('#ffffff')
+     .text('Book an In-Depth Financial\nConsultation', margin + buttonWidth + 35, yPos + 15, { width: buttonWidth - 30, align: 'center' });
+  doc.link(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 'https://calendly.com/ehhowardwealth/initial-financial-consultation');
   
-  // Professional footer
+  // Footer
   doc.fontSize(10)
-     .fillColor('#718096')
-     .text('E.H. Howard & Associates | Professional Financial Planning Services', 
-           40, doc.page.height - 80, { align: 'center' });
-  
-  doc.fontSize(9)
-     .fillColor('#a0aec0')
-     .text('This analysis is for planning purposes only. Past performance does not guarantee future results. Consult a financial advisor for personalized advice.', 
-           40, doc.page.height - 60, { align: 'center', width: pageWidth });
+     .fillColor('#666666')
+     .text('E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services', 
+           margin, doc.page.height - 60, { align: 'center', width: contentWidth });
 }
 
 // Health check endpoint
