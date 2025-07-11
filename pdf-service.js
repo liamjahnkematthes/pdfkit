@@ -289,9 +289,24 @@ async function generateCharts(projections, data) {
     // Calculate 3-account allocation across lifecycle phases
     const lifecyclePhases = ['Accumulation', 'Retirement Planning', 'Distribution', 'Wealth Transfer'];
     
-    // Dynamic account values based on user's actual financial scale
-    const basePortfolio = Math.max(data.savings, 100000);
-    const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * 3);
+    // Dynamic account values based on user's actual financial scale - Enhanced responsiveness
+    const userIncome = parseInt(data.income) || 50000;
+    const userSavings = parseInt(data.savings) || 100000;
+    
+    // More responsive scaling based on income brackets
+    let scalingMultiplier;
+    if (userIncome <= 50000) {
+      scalingMultiplier = 1.0; // Conservative scaling for lower income
+    } else if (userIncome <= 100000) {
+      scalingMultiplier = 2.0; // Moderate scaling for middle income
+    } else if (userIncome <= 200000) {
+      scalingMultiplier = 4.0; // Higher scaling for upper-middle income
+    } else {
+      scalingMultiplier = 6.0; // Aggressive scaling for high income
+    }
+    
+    const basePortfolio = Math.max(userSavings, userIncome * 2); // Base it more on income
+    const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * scalingMultiplier);
     
     // Account values that grow from zero across phases (in actual dollars)
     const accountData = [
@@ -564,13 +579,13 @@ async function renderPDF(doc, data, projections, charts) {
     // Draw phase milestone circles
     doc.circle(phaseX, timelineY, 6).fillColor('#2a73d2').fill();
     
-    // Phase name (bold, 10pt)
-    doc.fontSize(9).fillColor('#1e2a45').text(phase.name, phaseX - 35, timelineY + 15, { width: 70, align: 'center' });
+    // Phase name (bold, 14pt - much bigger and more obvious)
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 15, { width: 90, align: 'center' });
     
-    // Phase description (7pt, gray)
-    doc.fontSize(7).fillColor('#666666').text(phase.desc, phaseX - 45, timelineY + 35, { width: 90, align: 'center' });
+    // Phase description (10pt, gray - bigger than before)
+    doc.fontSize(10).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 45, { width: 110, align: 'center' });
   });
-  yPos += 80;
+  yPos += 90; // More space needed for bigger text
   
   // 4. RETIREMENT GRAPH (3-layer area chart only)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
