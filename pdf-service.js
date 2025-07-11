@@ -148,11 +148,14 @@ async function generateCharts(projections, data) {
       projections.totalAtRetirement * 0.6   // Wealth Transfer
     ];
     
-    // All accounts start at zero and grow to show relative allocation
-    const baseValues = [0, 20, 60, 40]; // Relative values starting from 0
-    const preTaxData = baseValues.map(base => base + 50);   // Pre-tax layer
-    const rothData = baseValues.map(base => base + 30);     // Roth layer  
-    const brokerageData = baseValues.map(base => base + 20); // Brokerage layer
+    // Dynamic scaling based on user's financial situation
+    const maxPortfolioValue = Math.max(projections.totalAtRetirement, data.savings * 10);
+    const scaleFactor = maxPortfolioValue / 100;
+    
+    // All accounts start from zero and grow proportionally
+    const preTaxData = [0, 30 * scaleFactor, 60 * scaleFactor, 45 * scaleFactor];
+    const rothData = [0, 20 * scaleFactor, 40 * scaleFactor, 30 * scaleFactor];  
+    const brokerageData = [0, 10 * scaleFactor, 20 * scaleFactor, 15 * scaleFactor];
     
     const lifecycleChart = {
       type: 'line',
@@ -286,33 +289,21 @@ async function generateCharts(projections, data) {
     // Calculate 3-account allocation across lifecycle phases
     const lifecyclePhases = ['Accumulation', 'Retirement Planning', 'Distribution', 'Wealth Transfer'];
     
-    // Account allocation strategy that changes by phase
-    const accountData = lifecyclePhases.map((phase, index) => {
-      let preTaxPct, rothPct, brokeragePct;
-      
-      switch(phase) {
-        case 'Accumulation':
-          preTaxPct = 50; rothPct = 30; brokeragePct = 20; // Building phase
-          break;
-        case 'Retirement Planning':
-          preTaxPct = 60; rothPct = 25; brokeragePct = 15; // Optimization phase
-          break;
-        case 'Distribution':
-          preTaxPct = 45; rothPct = 35; brokeragePct = 20; // Withdrawal phase
-          break;
-        case 'Wealth Transfer':
-          preTaxPct = 30; rothPct = 50; brokeragePct = 20; // Legacy phase
-          break;
-        default:
-          preTaxPct = 50; rothPct = 30; brokeragePct = 20;
-      }
-      
-      return {
-        preTax: preTaxPct,
-        roth: preTaxPct + rothPct, // Stacked values
-        brokerage: preTaxPct + rothPct + brokeragePct // Total stack
-      };
-    });
+    // Dynamic account values that all start from zero
+    const maxValue = Math.max(projections.totalAtRetirement, data.savings * 5);
+    const chartScaleFactor = 100 / maxValue;
+    
+    // Account values that grow from zero across phases
+    const accountData = [
+      // Accumulation: Starting to build
+      { preTax: 0, roth: 0, brokerage: 0 },
+      // Retirement Planning: Growing significantly  
+      { preTax: 30, roth: 50, brokerage: 70 },
+      // Distribution: Peak values
+      { preTax: 40, roth: 65, brokerage: 85 },
+      // Wealth Transfer: Drawing down
+      { preTax: 25, roth: 45, brokerage: 60 }
+    ];
     
     const threeLayerChart = {
       type: 'line',
@@ -387,15 +378,17 @@ async function generateCharts(projections, data) {
         scales: {
           x: {
             title: {
-              display: true,
-              text: 'Financial Lifetime Stages',
-              font: { weight: 'bold', size: 12 }
+              display: false  // Remove the title, just show labels
             },
             grid: {
               display: false
             },
             ticks: {
-              display: false  // Remove numbers from x-axis
+              font: {
+                size: 16,  // Much bigger labels
+                weight: 'bold'
+              },
+              color: '#1e2a45'
             }
           },
           y: {
@@ -410,7 +403,15 @@ async function generateCharts(projections, data) {
             ticks: {
               stepSize: 20,
               callback: function(value) {
-                return value;
+                // Dynamic formatting based on user's financial scale
+                const actualValue = (value / 100) * maxValue;
+                if (actualValue >= 1000000) {
+                  return '$' + (actualValue/1000000).toFixed(1) + 'M';
+                } else if (actualValue >= 1000) {
+                  return '$' + (actualValue/1000).toFixed(0) + 'K';
+                } else {
+                  return '$' + actualValue.toFixed(0);
+                }
               }
             },
             grid: {
@@ -505,11 +506,11 @@ async function renderPDF(doc, data, projections, charts) {
     // Add E.H. Howard logo on LEFT side
     const logoResponse = await axios.get('https://media.licdn.com/dms/image/v2/D4E03AQHNi-MkmqCYNw/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1708364083911?e=2147483647&v=beta&t=kHRmVIEFKZKav5KHFRzOpnasZAVCV0isvaaPbGG2Qvs', { responseType: 'arraybuffer' });
     const logoBuffer = Buffer.from(logoResponse.data);
-    const logoWidth = 50;
-    doc.image(logoBuffer, margin, 30, { width: logoWidth });
+    const logoWidth = 70; // Increased from 50
+    doc.image(logoBuffer, margin, 25, { width: logoWidth });
     
     // Add E.H. Howard logo on RIGHT side  
-    doc.image(logoBuffer, pageWidth - margin - logoWidth, 30, { width: logoWidth });
+    doc.image(logoBuffer, pageWidth - margin - logoWidth, 25, { width: logoWidth });
   } catch (error) {
     console.log('Could not load logo');
   }
@@ -522,7 +523,7 @@ async function renderPDF(doc, data, projections, charts) {
      .fillColor('#1e2a45')
      .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
   
-  // Personal Info Table (top section)
+  // Personal Info Table (top section) - Fixed overlap
   let yPos = 130;
   doc.fontSize(14).fillColor('#1e2a45').text('Personal Info', margin, yPos);
   yPos += 25;
@@ -533,21 +534,21 @@ async function renderPDF(doc, data, projections, charts) {
   const cellWidth = contentWidth / 6;
   
   // Header row with blue background
-  doc.rect(margin, yPos, contentWidth, 25).fillColor('#2a73d2').fill();
-  doc.fontSize(10).fillColor('#ffffff');
+  doc.rect(margin, yPos, contentWidth, 30).fillColor('#2a73d2').fill(); // Increased height
+  doc.fontSize(9).fillColor('#ffffff'); // Smaller font
   tableHeaders.forEach((header, i) => {
-    doc.text(header, margin + (i * cellWidth) + 5, yPos + 8, { width: cellWidth - 10 });
+    doc.text(header, margin + (i * cellWidth) + 3, yPos + 10, { width: cellWidth - 6 });
   });
-  yPos += 25;
+  yPos += 30;
   
   // Data row with white background and borders
-  doc.rect(margin, yPos, contentWidth, 25).fillColor('#ffffff').fill();
-  doc.rect(margin, yPos, contentWidth, 25).strokeColor('#cccccc').stroke();
-  doc.fontSize(10).fillColor('#1e2a45');
+  doc.rect(margin, yPos, contentWidth, 30).fillColor('#ffffff').fill(); // Increased height
+  doc.rect(margin, yPos, contentWidth, 30).strokeColor('#cccccc').stroke();
+  doc.fontSize(9).fillColor('#1e2a45'); // Smaller font
   tableValues.forEach((value, i) => {
-    doc.text(value.toString(), margin + (i * cellWidth) + 5, yPos + 8, { width: cellWidth - 10 });
+    doc.text(value.toString(), margin + (i * cellWidth) + 3, yPos + 10, { width: cellWidth - 6 });
   });
-  yPos += 35;
+  yPos += 40; // More space after table
   
   // 2. RETIREMENT INSIGHT BOX (using data.summary)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
@@ -572,10 +573,13 @@ async function renderPDF(doc, data, projections, charts) {
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
   yPos += 25;
   
-  // Draw timeline with 4 phases
+  // Draw timeline with 4 phases - Fixed spacing
   const timelineY = yPos;
-  const timelineWidth = contentWidth - 40;
-  const phaseWidth = timelineWidth / 4;
+  const timelineStart = margin + 20;
+  const timelineEnd = pageWidth - margin - 20;
+  const timelineWidth = timelineEnd - timelineStart;
+  const phaseWidth = timelineWidth / 3; // Divide by 3 to get 4 points
+  
   const phases = [
     { name: 'Accumulation\nPhase', desc: 'Building wealth through consistent saving and investing' },
     { name: 'Retirement\nPlanning', desc: 'Optimizing strategy 5 years before retirement' },
@@ -583,11 +587,11 @@ async function renderPDF(doc, data, projections, charts) {
     { name: 'Wealth\nTransfer', desc: 'Passing assets to beneficiaries efficiently' }
   ];
   
-  // Draw main timeline line
-  doc.moveTo(margin + 20, timelineY).lineTo(margin + timelineWidth, timelineY).strokeColor('#2a73d2').lineWidth(3).stroke();
+  // Draw main timeline line (stops at last phase)
+  doc.moveTo(timelineStart, timelineY).lineTo(timelineEnd, timelineY).strokeColor('#2a73d2').lineWidth(3).stroke();
   
   phases.forEach((phase, i) => {
-    const phaseX = margin + 20 + (i * phaseWidth);
+    const phaseX = timelineStart + (i * phaseWidth);
     
     // Draw phase milestone circles
     doc.circle(phaseX, timelineY, 6).fillColor('#2a73d2').fill();
@@ -595,7 +599,7 @@ async function renderPDF(doc, data, projections, charts) {
     // Phase name (bold, 10pt)
     doc.fontSize(9).fillColor('#1e2a45').text(phase.name, phaseX - 35, timelineY + 15, { width: 70, align: 'center' });
     
-    // Phase description (8pt, gray)
+    // Phase description (7pt, gray)
     doc.fontSize(7).fillColor('#666666').text(phase.desc, phaseX - 45, timelineY + 35, { width: 90, align: 'center' });
   });
   yPos += 80;
