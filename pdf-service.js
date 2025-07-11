@@ -308,16 +308,22 @@ async function generateCharts(projections, data) {
     const basePortfolio = Math.max(userSavings, userIncome * 2); // Base it more on income
     const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * scalingMultiplier);
     
-    // Account values that grow from zero across phases (in actual dollars)
+    // Account values that grow from user's current savings across phases (in actual dollars)
+    // Start all accounts from user's current savings, distributed across account types
+    const startingSavings = userSavings;
+    const startingPreTax = startingSavings * 0.4;   // 40% in pre-tax
+    const startingRoth = startingSavings * 0.3;     // 30% in Roth
+    const startingBrokerage = startingSavings * 0.3; // 30% in Brokerage
+    
     const accountData = [
-      // Accumulation: Starting to build
-      { preTax: 0, roth: 0, brokerage: 0 },
-      // Retirement Planning: Growing significantly  
-      { preTax: peakPortfolio * 0.3, roth: peakPortfolio * 0.5, brokerage: peakPortfolio * 0.7 },
+      // Accumulation: Starting from user's current savings
+      { preTax: startingPreTax, roth: startingRoth, brokerage: startingBrokerage },
+      // Retirement Planning: Growing significantly from current savings
+      { preTax: startingPreTax + (peakPortfolio * 0.3), roth: startingRoth + (peakPortfolio * 0.5), brokerage: startingBrokerage + (peakPortfolio * 0.7) },
       // Distribution: Peak values
-      { preTax: peakPortfolio * 0.4, roth: peakPortfolio * 0.65, brokerage: peakPortfolio * 0.85 },
-      // Wealth Transfer: Drawing down
-      { preTax: peakPortfolio * 0.25, roth: peakPortfolio * 0.45, brokerage: peakPortfolio * 0.6 }
+      { preTax: startingPreTax + (peakPortfolio * 0.4), roth: startingRoth + (peakPortfolio * 0.65), brokerage: startingBrokerage + (peakPortfolio * 0.85) },
+      // Wealth Transfer: Drawing down but still above starting point
+      { preTax: startingPreTax + (peakPortfolio * 0.25), roth: startingRoth + (peakPortfolio * 0.45), brokerage: startingBrokerage + (peakPortfolio * 0.6) }
     ];
     
     const threeLayerChart = {
