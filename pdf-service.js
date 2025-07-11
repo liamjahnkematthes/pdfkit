@@ -148,10 +148,11 @@ async function generateCharts(projections, data) {
       projections.totalAtRetirement * 0.6   // Wealth Transfer
     ];
     
-    // Split total into 3 account types
-    const preTaxData = totalByStage.map(total => total * 0.5);  // 50% Pre-tax
-    const rothData = totalByStage.map(total => total * 0.3);    // 30% Roth  
-    const brokerageData = totalByStage.map(total => total * 0.2); // 20% Brokerage
+    // All accounts start at zero and grow to show relative allocation
+    const baseValues = [0, 20, 60, 40]; // Relative values starting from 0
+    const preTaxData = baseValues.map(base => base + 50);   // Pre-tax layer
+    const rothData = baseValues.map(base => base + 30);     // Roth layer  
+    const brokerageData = baseValues.map(base => base + 20); // Brokerage layer
     
     const lifecycleChart = {
       type: 'line',
@@ -400,6 +401,7 @@ async function generateCharts(projections, data) {
           y: {
             min: 0,
             max: 100,
+            beginAtZero: true,
             title: {
               display: true,
               text: 'Relative Dollar Value',
@@ -489,7 +491,7 @@ async function createPDF(data, projections, charts) {
 }
 
 /**
- * Render clean 2-page "Retirement Analyzer" PDF
+ * Render clean 2-page "Retirement Plan" PDF
  */
 async function renderPDF(doc, data, projections, charts) {
   const pageWidth = doc.page.width;
@@ -498,16 +500,30 @@ async function renderPDF(doc, data, projections, charts) {
   
   // PAGE 1 - MAIN ANALYSIS
   
-  // 1. TOP BRANDING - Company name and title
+  // 1. TOP BRANDING - Logos on both sides + company name and title
+  try {
+    // Add E.H. Howard logo on LEFT side
+    const logoResponse = await axios.get('https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=61556220746066', { responseType: 'arraybuffer' });
+    const logoBuffer = Buffer.from(logoResponse.data);
+    const logoWidth = 50;
+    doc.image(logoBuffer, margin, 30, { width: logoWidth });
+    
+    // Add E.H. Howard logo on RIGHT side  
+    doc.image(logoBuffer, pageWidth - margin - logoWidth, 30, { width: logoWidth });
+  } catch (error) {
+    console.log('Could not load logo');
+  }
+  
+  // Center company name
   doc.fontSize(18).fillColor('#1e2a45').text('E.H. HOWARD WEALTH MANAGEMENT', margin, 40, { align: 'center', width: contentWidth });
   
-  // Center title "Retirement Analyzer"
+  // Center title "Retirement Plan"
   doc.fontSize(24)
      .fillColor('#1e2a45')
-     .text('Retirement Analyzer', margin, 100, { align: 'center', width: contentWidth });
+     .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
   
   // Personal Info Table (top section)
-  let yPos = 150;
+  let yPos = 130;
   doc.fontSize(14).fillColor('#1e2a45').text('Personal Info', margin, yPos);
   yPos += 25;
   
@@ -531,40 +547,40 @@ async function renderPDF(doc, data, projections, charts) {
   tableValues.forEach((value, i) => {
     doc.text(value.toString(), margin + (i * cellWidth) + 5, yPos + 8, { width: cellWidth - 10 });
   });
-  yPos += 45;
+  yPos += 35;
   
   // 2. RETIREMENT INSIGHT BOX (using data.summary)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
   yPos += 20;
   
   // Bordered insight box
-  const insightHeight = 80;
+  const insightHeight = 60;
   doc.rect(margin, yPos, contentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
   doc.rect(margin, yPos, contentWidth, insightHeight).fillColor('#fdfdfd').fill();
   
   // Add the AI-generated summary text from data.summary
-  doc.fontSize(11)
+  doc.fontSize(10)
      .fillColor('#1e2a45')
      .text(data.summary || 'Your personalized retirement insight will appear here...', 
-           margin + 15, yPos + 15, { 
+           margin + 15, yPos + 10, { 
              width: contentWidth - 30, 
              lineGap: 2 
            });
-  yPos += insightHeight + 30;
+  yPos += insightHeight + 25;
   
   // 3. RETIREMENT TIMELINE
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
-  yPos += 30;
+  yPos += 25;
   
   // Draw timeline with 4 phases
   const timelineY = yPos;
   const timelineWidth = contentWidth - 40;
   const phaseWidth = timelineWidth / 4;
   const phases = [
-    { name: 'Accumulation\nPhase', desc: 'The Accumulation phase of your investment life is from when you begin investing until you are 5 years from your retirement age.' },
-    { name: 'Retirement\nPlanning', desc: 'When you are 5 years away from retirement then it is important to consider in-depth retirement planning.' },
-    { name: 'Distribution\nPhase', desc: 'In the Distribution Phase, we have entered retirement and are taking retirement income.' },
-    { name: 'Generational\nWealth Transfer', desc: 'After the Distribution Phase has ended, we look to have an efficient passing down of generational wealth to your beneficiaries.' }
+    { name: 'Accumulation\nPhase', desc: 'Building wealth through consistent saving and investing' },
+    { name: 'Retirement\nPlanning', desc: 'Optimizing strategy 5 years before retirement' },
+    { name: 'Distribution\nPhase', desc: 'Managing withdrawals during retirement years' },
+    { name: 'Wealth\nTransfer', desc: 'Passing assets to beneficiaries efficiently' }
   ];
   
   // Draw main timeline line
@@ -574,15 +590,15 @@ async function renderPDF(doc, data, projections, charts) {
     const phaseX = margin + 20 + (i * phaseWidth);
     
     // Draw phase milestone circles
-    doc.circle(phaseX, timelineY, 8).fillColor('#2a73d2').fill();
+    doc.circle(phaseX, timelineY, 6).fillColor('#2a73d2').fill();
     
-    // Phase name (bold, 12pt)
-    doc.fontSize(10).fillColor('#1e2a45').text(phase.name, phaseX - 40, timelineY + 20, { width: 80, align: 'center' });
+    // Phase name (bold, 10pt)
+    doc.fontSize(9).fillColor('#1e2a45').text(phase.name, phaseX - 35, timelineY + 15, { width: 70, align: 'center' });
     
     // Phase description (8pt, gray)
-    doc.fontSize(8).fillColor('#666666').text(phase.desc, phaseX - 60, timelineY + 50, { width: 120, align: 'center' });
+    doc.fontSize(7).fillColor('#666666').text(phase.desc, phaseX - 45, timelineY + 35, { width: 90, align: 'center' });
   });
-  yPos += 140;
+  yPos += 80;
   
   // 4. RETIREMENT GRAPH (3-layer area chart only)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
@@ -593,17 +609,17 @@ async function renderPDF(doc, data, projections, charts) {
     try {
       const graphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
       const graphBuffer = Buffer.from(graphResponse.data);
-      doc.image(graphBuffer, margin, yPos, { width: contentWidth });
-      yPos += 200;
+      doc.image(graphBuffer, margin, yPos, { width: contentWidth, height: 140 });
+      yPos += 150;
     } catch (error) {
       console.log('Could not load retirement graph');
-      yPos += 200;
+      yPos += 150;
     }
   }
   
-  // 5. PROFESSIONAL TIPS SECTION
+  // 5. PROFESSIONAL TIPS SECTION (on same page)
   doc.fontSize(16).fillColor('#1e2a45').text('Professional Tips', margin, yPos);
-  yPos += 25;
+  yPos += 20;
   
   const tips = [
     'Save early and often',
@@ -613,51 +629,45 @@ async function renderPDF(doc, data, projections, charts) {
     'Use a financial professional'
   ];
   
-  doc.fontSize(10).fillColor('#1e2a45');
+  doc.fontSize(9).fillColor('#1e2a45');
   tips.forEach(tip => {
-    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40 });
-    yPos += 18;
+    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40, continued: false });
+    yPos += 12;
   });
   
-  // Check if we need a second page
-  if (yPos > doc.page.height - 150) {
-    doc.addPage();
-    yPos = margin;
-  } else {
-    yPos += 40;
-  }
+  yPos += 15;
   
-  // 6. MORE RESOURCES SECTION
+  // 6. MORE RESOURCES SECTION (bottom of first page)
   doc.fontSize(16).fillColor('#1e2a45').text('More Resources', margin, yPos);
-  yPos += 30;
+  yPos += 20;
   
   // Website link
   doc.fontSize(12).fillColor('#2a73d2')
      .text('ehhowardwealth.com', margin, yPos, { align: 'center', width: contentWidth });
   doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
-  yPos += 30;
+  yPos += 25;
   
   // 7. BOTTOM CALLS TO ACTION - Two buttons side by side
   const buttonWidth = (contentWidth - 20) / 2;
-  const buttonHeight = 45;
+  const buttonHeight = 35;
   
   // Left button - Webinar
   doc.roundedRect(margin, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
-  doc.fontSize(12).fillColor('#ffffff')
-     .text('The Intelligent Retirement\nWebinar', margin + 15, yPos + 15, { width: buttonWidth - 30, align: 'center' });
+  doc.fontSize(10).fillColor('#ffffff')
+     .text('The Intelligent Retirement\nWebinar', margin + 15, yPos + 12, { width: buttonWidth - 30, align: 'center' });
   doc.link(margin, yPos, buttonWidth, buttonHeight, 'https://theintelligentretirement.com/webinar');
   
   // Right button - Consultation  
   doc.roundedRect(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
-  doc.fontSize(12).fillColor('#ffffff')
-     .text('Book an In-Depth Financial\nConsultation', margin + buttonWidth + 35, yPos + 15, { width: buttonWidth - 30, align: 'center' });
+  doc.fontSize(10).fillColor('#ffffff')
+     .text('Book an In-Depth Financial\nConsultation', margin + buttonWidth + 35, yPos + 12, { width: buttonWidth - 30, align: 'center' });
   doc.link(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 'https://calendly.com/ehhowardwealth/initial-financial-consultation');
   
   // Footer
-  doc.fontSize(10)
+  doc.fontSize(8)
      .fillColor('#666666')
      .text('E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services', 
-           margin, doc.page.height - 60, { align: 'center', width: contentWidth });
+           margin, doc.page.height - 50, { align: 'center', width: contentWidth });
 }
 
 // Health check endpoint
