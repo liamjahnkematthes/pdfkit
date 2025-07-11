@@ -308,16 +308,17 @@ async function generateCharts(projections, data) {
     const basePortfolio = Math.max(userSavings, userIncome * 2); // Base it more on income
     const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * scalingMultiplier);
     
-    // Account values that grow from zero across phases (in actual dollars)
+    // Account values that start from user's current savings and grow across phases (in actual dollars)
+    const userCurrentSavings = parseInt(data.savings) || 0;
     const accountData = [
-      // Accumulation: Starting to build
-      { preTax: 0, roth: 0, brokerage: 0 },
-      // Retirement Planning: Growing significantly  
-      { preTax: peakPortfolio * 0.3, roth: peakPortfolio * 0.5, brokerage: peakPortfolio * 0.7 },
+      // Accumulation: Starting from user's current savings - all accounts start at same level
+      { preTax: userCurrentSavings, roth: userCurrentSavings, brokerage: userCurrentSavings },
+      // Retirement Planning: Growing significantly from the baseline
+      { preTax: userCurrentSavings + (peakPortfolio * 0.3), roth: userCurrentSavings + (peakPortfolio * 0.5), brokerage: userCurrentSavings + (peakPortfolio * 0.7) },
       // Distribution: Peak values
-      { preTax: peakPortfolio * 0.4, roth: peakPortfolio * 0.65, brokerage: peakPortfolio * 0.85 },
-      // Wealth Transfer: Drawing down
-      { preTax: peakPortfolio * 0.25, roth: peakPortfolio * 0.45, brokerage: peakPortfolio * 0.6 }
+      { preTax: userCurrentSavings + (peakPortfolio * 0.4), roth: userCurrentSavings + (peakPortfolio * 0.65), brokerage: userCurrentSavings + (peakPortfolio * 0.85) },
+      // Wealth Transfer: Drawing down but still above initial savings
+      { preTax: userCurrentSavings + (peakPortfolio * 0.25), roth: userCurrentSavings + (peakPortfolio * 0.45), brokerage: userCurrentSavings + (peakPortfolio * 0.6) }
     ];
     
     const threeLayerChart = {
@@ -399,8 +400,8 @@ async function generateCharts(projections, data) {
             }
           },
           y: {
-            min: 0,
-            beginAtZero: true,
+            min: Math.max(0, userCurrentSavings * 0.9), // Start slightly below user's current savings for better visualization
+            beginAtZero: false,
             title: {
               display: false
             },
