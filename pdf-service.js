@@ -303,17 +303,21 @@ async function generateCharts(projections, data) {
     // More responsive scaling based on income brackets
     let scalingMultiplier;
     if (userIncome <= 50000) {
-      scalingMultiplier = 1.0; // Conservative scaling for lower income
+      scalingMultiplier = 1.5; // Conservative scaling for lower income
     } else if (userIncome <= 100000) {
-      scalingMultiplier = 2.0; // Moderate scaling for middle income
+      scalingMultiplier = 3.0; // Moderate scaling for middle income  
     } else if (userIncome <= 200000) {
-      scalingMultiplier = 4.0; // Higher scaling for upper-middle income
+      scalingMultiplier = 5.0; // Higher scaling for upper-middle income
     } else {
-      scalingMultiplier = 6.0; // Aggressive scaling for high income
+      scalingMultiplier = 8.0; // Aggressive scaling for high income
     }
     
-    const basePortfolio = Math.max(userSavings, userIncome * 2); // Base it more on income
+    // Enhanced calculation for high net worth users
+    const basePortfolio = Math.max(userSavings, userIncome * 3); // Base it more on income
     const peakPortfolio = Math.max(projections.totalAtRetirement, basePortfolio * scalingMultiplier);
+    
+    // For users with significant savings, ensure meaningful growth
+    const enhancedPeak = userSavings > 500000 ? Math.max(peakPortfolio, userSavings * 4) : peakPortfolio;
     
     // Account values that grow from user's current savings across phases (in actual dollars)
     // Start all accounts from user's current savings, distributed across account types
@@ -326,11 +330,11 @@ async function generateCharts(projections, data) {
       // Accumulation: Starting from user's current savings
       { preTax: startingPreTax, roth: startingRoth, brokerage: startingBrokerage },
       // Retirement Planning: Growing significantly from current savings
-      { preTax: startingPreTax + (peakPortfolio * 0.3), roth: startingRoth + (peakPortfolio * 0.5), brokerage: startingBrokerage + (peakPortfolio * 0.7) },
+      { preTax: startingPreTax + (enhancedPeak * 0.3), roth: startingRoth + (enhancedPeak * 0.5), brokerage: startingBrokerage + (enhancedPeak * 0.7) },
       // Distribution: Peak values
-      { preTax: startingPreTax + (peakPortfolio * 0.4), roth: startingRoth + (peakPortfolio * 0.65), brokerage: startingBrokerage + (peakPortfolio * 0.85) },
+      { preTax: startingPreTax + (enhancedPeak * 0.4), roth: startingRoth + (enhancedPeak * 0.65), brokerage: startingBrokerage + (enhancedPeak * 0.85) },
       // Wealth Transfer: Drawing down but still above starting point
-      { preTax: startingPreTax + (peakPortfolio * 0.25), roth: startingRoth + (peakPortfolio * 0.45), brokerage: startingBrokerage + (peakPortfolio * 0.6) }
+      { preTax: startingPreTax + (enhancedPeak * 0.25), roth: startingRoth + (enhancedPeak * 0.45), brokerage: startingBrokerage + (enhancedPeak * 0.6) }
     ];
     
     const threeLayerChart = {
@@ -412,8 +416,6 @@ async function generateCharts(projections, data) {
             }
           },
           y: {
-            min: 0,
-            beginAtZero: true,
             title: {
               display: false
             },
@@ -597,8 +599,8 @@ async function renderPDF(doc, data, projections, charts) {
     // Phase name (bold, 14pt - much bigger and more obvious)
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 15, { width: 90, align: 'center' });
     
-    // Phase description (10pt, gray - bigger than before, shortened text)
-    doc.fontSize(10).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 45, { width: 110, align: 'center' });
+    // Phase description (12pt, gray - bigger for better readability)
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 45, { width: 110, align: 'center' });
   });
   yPos += 120; // Much more space needed for bigger text and to prevent overlap
   
