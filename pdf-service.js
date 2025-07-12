@@ -548,21 +548,19 @@ async function renderPDF(doc, data, projections, charts) {
      .fillColor('#1e2a45')
      .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
   
-  // Add back Personal Info Table
+  // Add back Personal Info Table (remove title, fix column headers)
   let yPos = 130;
-  doc.fontSize(16).fillColor('#1e2a45').text('Personal Information', margin, yPos);
-  yPos += 25;
   
-  // Create table with headers and data
+  // Create table with full headers and taller rows to fit text properly
   const tableData = [
     ['Name', 'Age', 'Annual Income', 'Retirement Savings', 'Retirement Age', 'Lifestyle Goal'],
     [data.name || 'Client', data.age.toString(), `$${parseInt(data.income).toLocaleString()}`, `$${parseInt(data.savings).toLocaleString()}`, data.retireAge.toString(), data.lifestyle ? data.lifestyle.charAt(0).toUpperCase() + data.lifestyle.slice(1) : 'Modest']
   ];
   
-  // Table styling
+  // Table styling with taller rows
   const tableWidth = contentWidth;
   const colWidth = tableWidth / 6; // 6 columns
-  const rowHeight = 25;
+  const rowHeight = 35; // Increased from 25 to 35 for better text fit
   
   // Draw table
   tableData.forEach((row, rowIndex) => {
