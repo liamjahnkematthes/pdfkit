@@ -740,8 +740,13 @@ async function renderPDF(doc, data, projections, charts) {
     try {
       const graphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
       const graphBuffer = Buffer.from(graphResponse.data);
-      doc.image(graphBuffer, margin, yPos, { width: contentWidth, height: 140 });
-      yPos += 150;
+      
+      // Maintain proper aspect ratio (700:400 = 1.75:1)
+      const chartWidth = contentWidth;
+      const chartHeight = chartWidth / 1.75; // Maintain original aspect ratio
+      
+      doc.image(graphBuffer, margin, yPos, { width: chartWidth, height: chartHeight });
+      yPos += chartHeight + 10;
     } catch (error) {
       console.log('Could not load retirement graph');
       yPos += 150;
