@@ -395,6 +395,9 @@ async function generateCharts(projections, data) {
       currentTotalValue: (currentPreTax + currentRoth + currentBrokerage).toLocaleString()
     });
     
+    // Calculate current total value for "You Are Here" annotation
+    const currentTotalValue = currentPreTax + currentRoth + currentBrokerage;
+    
     const threeLayerChart = {
       type: 'line',
       data: {
@@ -433,16 +436,16 @@ async function generateCharts(projections, data) {
           {
             label: 'You Are Here',
             data: [
-              timelinePosition < 1 ? currentPreTax + currentRoth + currentBrokerage : null,
-              timelinePosition >= 1 && timelinePosition < 2 ? currentPreTax + currentRoth + currentBrokerage : null,
-              timelinePosition >= 2 && timelinePosition < 3 ? currentPreTax + currentRoth + currentBrokerage : null,
-              timelinePosition >= 3 ? currentPreTax + currentRoth + currentBrokerage : null
+              timelinePosition < 1 ? currentTotalValue : null,
+              timelinePosition >= 1 && timelinePosition < 2 ? currentTotalValue : null,
+              timelinePosition >= 2 && timelinePosition < 3 ? currentTotalValue : null,
+              timelinePosition >= 3 ? currentTotalValue : null
             ],
             backgroundColor: '#FF6B6B',
             borderColor: '#FF6B6B',
             borderWidth: 4,
-            pointRadius: 10,
-            pointStyle: 'triangle',
+            pointRadius: 12,
+            pointStyle: 'circle',
             showLine: false,
             fill: false
           }
@@ -452,7 +455,7 @@ async function generateCharts(projections, data) {
         responsive: true,
         plugins: {
           title: {
-            display: false  // Remove redundant title
+            display: false
           },
           legend: {
             display: true,
@@ -472,37 +475,55 @@ async function generateCharts(projections, data) {
                 ];
               }
             }
+          },
+          // Add subtitle showing current savings amount
+          subtitle: {
+            display: true,
+            text: `You've saved ${currentTotalValue >= 1000000 ? '$' + (currentTotalValue/1000000).toFixed(1) + 'M' : '$' + (currentTotalValue/1000).toFixed(0) + 'K'} today`,
+            color: '#FF6B6B',
+            font: {
+              size: 14,
+              weight: 'bold'
+            },
+            padding: {
+              top: 5,
+              bottom: 15
+            }
           }
         },
         scales: {
           x: {
             title: {
-              display: false  // Remove the title, just show labels
+              display: false
             },
             grid: {
-              display: false
+              display: false,
+              drawBorder: false,  // Remove left border line
+              drawTicks: false    // Remove tick marks for cleaner look
             },
             ticks: {
               font: {
-                size: 24,  // Much bigger x-axis labels (was 18pt)
+                size: 24,
                 weight: 'bold'
               },
               color: '#1e2a45'
+            },
+            border: {
+              display: false  // Remove bottom border line
             }
           },
           y: {
             title: {
               display: false
             },
-            min: Math.min(startingPreTax, startingRoth, startingBrokerage) * 0.9, // Start from 90% of lowest starting value
+            min: Math.min(startingPreTax, startingRoth, startingBrokerage) * 0.9,
             ticks: {
               font: {
-                size: 20,  // Much bigger y-axis labels (was 14pt)
+                size: 20,
                 weight: 'bold'
               },
               color: '#1e2a45',
               callback: function(value) {
-                // Show actual dollar values based on user's scale
                 if (value >= 1000000) {
                   return '$' + (value/1000000).toFixed(1) + 'M';
                 } else if (value >= 1000) {
@@ -513,8 +534,13 @@ async function generateCharts(projections, data) {
               }
             },
             grid: {
-              color: 'rgba(0,0,0,0.1)',
-              lineWidth: 1
+              color: 'rgba(0,0,0,0.05)',  // Even lighter grid lines
+              lineWidth: 1,
+              drawBorder: false,  // Remove left border line
+              drawTicks: false    // Remove tick marks for cleaner look
+            },
+            border: {
+              display: false  // Remove left border line
             }
           }
         },
@@ -529,6 +555,15 @@ async function generateCharts(projections, data) {
         interaction: {
           intersect: false,
           mode: 'index'
+        },
+        // Clean up chart spines - remove right and top borders
+        layout: {
+          padding: {
+            top: 10,
+            right: 10,
+            bottom: 10,
+            left: 10
+          }
         }
       }
     };
