@@ -768,16 +768,12 @@ async function renderPDF(doc, data, projections, charts) {
   
   yPos += 35; // More spacing before footer
   
-  // Footer with clickable website link (removed More Resources section and buttons)
-  doc.fontSize(14).fillColor('#2a73d2')
-     .text('ehhowardwealth.com', margin, yPos, { align: 'center', width: contentWidth });
-  doc.link(margin, yPos, contentWidth, 20, 'https://ehhowardwealth.com');
-  
-  // Company footer
+  // Footer with embedded link (moved up to first page)
+  const footerText = 'E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services';
   doc.fontSize(8)
      .fillColor('#666666')
-     .text('E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services', 
-           margin, doc.page.height - 50, { align: 'center', width: contentWidth });
+     .text(footerText, margin, yPos, { align: 'center', width: contentWidth });
+  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
 }
 
 // Health check endpoint
