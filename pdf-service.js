@@ -547,10 +547,30 @@ async function renderPDF(doc, data, projections, charts) {
      .fillColor('#1e2a45')
      .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
   
-  // Skip Personal Info Table - go straight to Retirement Insight
+  // Add back Personal Info Table
   let yPos = 130;
+  doc.fontSize(16).fillColor('#1e2a45').text('Personal Information', margin, yPos);
+  yPos += 20;
   
-  // 2. RETIREMENT INSIGHT BOX (moved up)
+  // Create client info array
+  const clientInfo = [
+    `Current Age: ${data.age} years old`,
+    `Annual Income: $${parseInt(data.income).toLocaleString()}`,
+    `Current Savings: $${parseInt(data.savings).toLocaleString()}`,
+    `Retirement Goal: Age ${data.retireAge} years`,
+    `Lifestyle Target: ${data.lifestyle ? data.lifestyle.charAt(0).toUpperCase() + data.lifestyle.slice(1) : 'Comfortable'}`
+  ];
+  
+  // Display client info
+  doc.fontSize(11).fillColor('#1e2a45');
+  clientInfo.forEach(info => {
+    doc.text(`• ${info}`, margin + 20, yPos, { width: contentWidth - 40 });
+    yPos += 16;
+  });
+  
+  yPos += 20;
+  
+  // 2. RETIREMENT INSIGHT BOX (moved down after personal info)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
   yPos += 20;
   
@@ -639,35 +659,14 @@ async function renderPDF(doc, data, projections, charts) {
     yPos += 12;
   });
   
-  yPos += 15;
+  yPos += 35; // More spacing before footer
   
-  // 6. MORE RESOURCES SECTION (bottom of first page)
-  doc.fontSize(16).fillColor('#1e2a45').text('More Resources', margin, yPos);
-  yPos += 20;
-  
-  // Website link
-  doc.fontSize(12).fillColor('#2a73d2')
+  // Footer with clickable website link (removed More Resources section and buttons)
+  doc.fontSize(14).fillColor('#2a73d2')
      .text('ehhowardwealth.com', margin, yPos, { align: 'center', width: contentWidth });
-  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
-  yPos += 25;
+  doc.link(margin, yPos, contentWidth, 20, 'https://ehhowardwealth.com');
   
-  // 7. BOTTOM CALLS TO ACTION - Two buttons side by side
-  const buttonWidth = (contentWidth - 20) / 2;
-  const buttonHeight = 35;
-  
-  // Left button - Webinar
-  doc.roundedRect(margin, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
-  doc.fontSize(10).fillColor('#ffffff')
-     .text('The Intelligent Retirement\nWebinar', margin + 15, yPos + 12, { width: buttonWidth - 30, align: 'center' });
-  doc.link(margin, yPos, buttonWidth, buttonHeight, 'https://theintelligentretirement.com/webinar');
-  
-  // Right button - Consultation  
-  doc.roundedRect(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 8).fillColor('#2a73d2').fill();
-  doc.fontSize(10).fillColor('#ffffff')
-     .text('Book an In-Depth Financial\nConsultation', margin + buttonWidth + 35, yPos + 12, { width: buttonWidth - 30, align: 'center' });
-  doc.link(margin + buttonWidth + 20, yPos, buttonWidth, buttonHeight, 'https://calendly.com/ehhowardwealth/initial-financial-consultation');
-  
-  // Footer
+  // Company footer
   doc.fontSize(8)
      .fillColor('#666666')
      .text('E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services', 
