@@ -648,11 +648,11 @@ async function renderPDF(doc, data, projections, charts) {
     // Draw phase milestone circles
     doc.circle(phaseX, timelineY, 6).fillColor('#2a73d2').fill();
     
-    // Phase name (bold, 14pt - positioned lower to prevent overlap with title)
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 45, timelineY + 20, { width: 90, align: 'center' });
+    // Phase name (bold, 14pt - wider width to prevent wrapping)
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#1e2a45').text(phase.name, phaseX - 60, timelineY + 20, { width: 120, align: 'center' });
     
-    // Phase description (12pt, gray - positioned even lower for clear separation)
-    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 55, timelineY + 55, { width: 110, align: 'center' });
+    // Phase description (12pt, gray - positioned lower with more space)
+    doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 70, timelineY + 60, { width: 140, align: 'center' });
   });
   yPos += 140; // Increased spacing from 120px to 140px for better separation
   
