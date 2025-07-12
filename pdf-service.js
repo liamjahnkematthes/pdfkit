@@ -694,9 +694,62 @@ async function renderPDF(doc, data, projections, charts) {
              width: contentWidth - 30, 
              lineGap: 2 
            });
-  yPos += insightHeight + 35; // More spacing before timeline
+  yPos += insightHeight + 35; // More spacing before graph
   
-  // 3. RETIREMENT TIMELINE
+  // 3. RETIREMENT GRAPH (moved up from timeline position)
+  doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
+  yPos += 20;
+  
+  // Only add the 3-layer retirement graph
+  if (charts.retirementGraph) {
+    try {
+      const graphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
+      const graphBuffer = Buffer.from(graphResponse.data);
+      
+      // Maintain proper aspect ratio (700:400 = 1.75:1)
+      const chartWidth = contentWidth;
+      const chartHeight = chartWidth / 1.75; // Maintain original aspect ratio
+      
+      doc.image(graphBuffer, margin, yPos, { width: chartWidth, height: chartHeight });
+      yPos += chartHeight + 10;
+    } catch (error) {
+      console.log('Could not load retirement graph');
+      yPos += 150;
+    }
+  }
+  
+  // 4. PROFESSIONAL TIPS SECTION (on same page, more space now)
+  doc.fontSize(16).fillColor('#1e2a45').text('Professional Tips', margin, yPos);
+  yPos += 20;
+  
+  const tips = [
+    'Save early and often',
+    'Utilize retirement savings through Pre-Tax, Roth and Brokerage Accounts',
+    'Minimize market volatility in Retirement Planning and Distribution Phases',
+    'Plan to withdraw 4-5% of total portfolio for retirement income',
+    'Use a financial professional'
+  ];
+  
+  doc.fontSize(9).fillColor('#1e2a45');
+  tips.forEach(tip => {
+    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40, continued: false });
+    yPos += 12;
+  });
+  
+  yPos += 35; // More spacing before footer
+  
+  // Footer with embedded link (moved up to first page)
+  const footerText = 'E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services';
+  doc.fontSize(8)
+     .fillColor('#666666')
+     .text(footerText, margin, yPos, { align: 'center', width: contentWidth });
+  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
+  
+  // PAGE 2 - RETIREMENT TIMELINE (moved from page 1)
+  doc.addPage();
+  yPos = margin;
+  
+  // 5. RETIREMENT TIMELINE (now on page 2)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Timeline', margin, yPos);
   yPos += 40; // Increased spacing from 25px to 40px to prevent overlap
   
@@ -729,56 +782,6 @@ async function renderPDF(doc, data, projections, charts) {
     // Phase description (12pt, gray - positioned lower with more space)
     doc.fontSize(12).font('Helvetica').fillColor('#666666').text(phase.desc, phaseX - 70, timelineY + 60, { width: 140, align: 'center' });
   });
-  yPos += 140; // Increased spacing from 120px to 140px for better separation
-  
-  // 4. RETIREMENT GRAPH (3-layer area chart only)
-  doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
-  yPos += 20;
-  
-  // Only add the 3-layer retirement graph
-  if (charts.retirementGraph) {
-    try {
-      const graphResponse = await axios.get(charts.retirementGraph, { responseType: 'arraybuffer' });
-      const graphBuffer = Buffer.from(graphResponse.data);
-      
-      // Maintain proper aspect ratio (700:400 = 1.75:1)
-      const chartWidth = contentWidth;
-      const chartHeight = chartWidth / 1.75; // Maintain original aspect ratio
-      
-      doc.image(graphBuffer, margin, yPos, { width: chartWidth, height: chartHeight });
-      yPos += chartHeight + 10;
-    } catch (error) {
-      console.log('Could not load retirement graph');
-      yPos += 150;
-    }
-  }
-  
-  // 5. PROFESSIONAL TIPS SECTION (on same page)
-  doc.fontSize(16).fillColor('#1e2a45').text('Professional Tips', margin, yPos);
-  yPos += 20;
-  
-  const tips = [
-    'Save early and often',
-    'Utilize retirement savings through Pre-Tax, Roth and Brokerage Accounts',
-    'Minimize market volatility in Retirement Planning and Distribution Phases',
-    'Plan to withdraw 4-5% of total portfolio for retirement income',
-    'Use a financial professional'
-  ];
-  
-  doc.fontSize(9).fillColor('#1e2a45');
-  tips.forEach(tip => {
-    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40, continued: false });
-    yPos += 12;
-  });
-  
-  yPos += 35; // More spacing before footer
-  
-  // Footer with embedded link (moved up to first page)
-  const footerText = 'E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services';
-  doc.fontSize(8)
-     .fillColor('#666666')
-     .text(footerText, margin, yPos, { align: 'center', width: contentWidth });
-  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
 }
 
 // Health check endpoint
