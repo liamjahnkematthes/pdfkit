@@ -337,6 +337,64 @@ async function generateCharts(projections, data) {
       { preTax: startingPreTax + (enhancedPeak * 0.25), roth: startingRoth + (enhancedPeak * 0.45), brokerage: startingBrokerage + (enhancedPeak * 0.6) }
     ];
     
+    // Calculate "You are here" position based on age and retirement timeline
+    const currentAge = parseInt(data.age);
+    const retirementAge = parseInt(data.retireAge);
+    const yearsToRetirement = retirementAge - currentAge;
+    
+    // Define phase age ranges dynamically based on user's retirement timeline
+    const workingYears = retirementAge - 25; // Assume working starts at 25
+    const accumulationEnd = 25 + (workingYears * 0.7); // 70% of working years
+    const retirementPlanningEnd = retirementAge; // Ends at retirement
+    const distributionEnd = retirementAge + 20; // 20 years of retirement
+    const wealthTransferEnd = retirementAge + 35; // 35 years total retirement
+    
+    // Calculate which phase and position within that phase
+    let phaseIndex = 0;
+    let phasePosition = 0;
+    
+    if (currentAge < 25) {
+      // User is very young - place them at the beginning of accumulation
+      phaseIndex = 0;
+      phasePosition = 0;
+    } else if (currentAge <= accumulationEnd && accumulationEnd > 25) {
+      phaseIndex = 0; // Accumulation Phase
+      phasePosition = Math.max(0, (currentAge - 25) / (accumulationEnd - 25));
+    } else if (currentAge <= retirementPlanningEnd) {
+      phaseIndex = 1; // Retirement Planning Phase  
+      phasePosition = (retirementPlanningEnd - accumulationEnd) > 0 ? (currentAge - accumulationEnd) / (retirementPlanningEnd - accumulationEnd) : 0;
+    } else if (currentAge <= distributionEnd) {
+      phaseIndex = 2; // Distribution Phase
+      phasePosition = (distributionEnd - retirementPlanningEnd) > 0 ? (currentAge - retirementPlanningEnd) / (distributionEnd - retirementPlanningEnd) : 0;
+    } else {
+      phaseIndex = 3; // Wealth Transfer Phase
+      phasePosition = (wealthTransferEnd - distributionEnd) > 0 ? Math.min(1, (currentAge - distributionEnd) / (wealthTransferEnd - distributionEnd)) : 0;
+    }
+    
+    // Ensure phase position is between 0 and 1
+    phasePosition = Math.max(0, Math.min(1, phasePosition));
+    
+    // Calculate exact position on timeline (0-3 scale)
+    const timelinePosition = phaseIndex + phasePosition;
+    
+    // Calculate current account values based on position
+    const currentPhaseIndex = Math.min(Math.floor(timelinePosition), accountData.length - 1);
+    const nextPhaseIndex = Math.min(currentPhaseIndex + 1, accountData.length - 1);
+    
+    const currentPreTax = startingPreTax + ((accountData[currentPhaseIndex].preTax - startingPreTax) * phasePosition);
+    const currentRoth = startingRoth + ((accountData[currentPhaseIndex].roth - startingRoth) * phasePosition);
+    const currentBrokerage = startingBrokerage + ((accountData[currentPhaseIndex].brokerage - startingBrokerage) * phasePosition);
+    
+    console.log('🎯 "You Are Here" Calculation:', {
+      currentAge,
+      retirementAge,
+      yearsToRetirement,
+      phaseIndex,
+      phasePosition: phasePosition.toFixed(2),
+      timelinePosition: timelinePosition.toFixed(2),
+      currentTotalValue: (currentPreTax + currentRoth + currentBrokerage).toLocaleString()
+    });
+    
     const threeLayerChart = {
       type: 'line',
       data: {
@@ -371,6 +429,22 @@ async function generateCharts(projections, data) {
             fill: '-1',
             tension: 0.4,
             pointRadius: 0
+          },
+          {
+            label: 'You Are Here',
+            data: [
+              timelinePosition < 1 ? currentPreTax + currentRoth + currentBrokerage : null,
+              timelinePosition >= 1 && timelinePosition < 2 ? currentPreTax + currentRoth + currentBrokerage : null,
+              timelinePosition >= 2 && timelinePosition < 3 ? currentPreTax + currentRoth + currentBrokerage : null,
+              timelinePosition >= 3 ? currentPreTax + currentRoth + currentBrokerage : null
+            ],
+            backgroundColor: '#FF6B6B',
+            borderColor: '#FF6B6B',
+            borderWidth: 4,
+            pointRadius: 10,
+            pointStyle: 'triangle',
+            showLine: false,
+            fill: false
           }
         ]
       },
@@ -393,7 +467,8 @@ async function generateCharts(projections, data) {
                 return [
                   { text: 'Pre-Tax', fillStyle: '#7EF1F6', strokeStyle: '#7EF1F6' },
                   { text: 'Roth', fillStyle: '#4ECDC4', strokeStyle: '#4ECDC4' },
-                  { text: 'Brokerage', fillStyle: '#2C5282', strokeStyle: '#2C5282' }
+                  { text: 'Brokerage', fillStyle: '#2C5282', strokeStyle: '#2C5282' },
+                  { text: 'You Are Here', fillStyle: '#FF6B6B', strokeStyle: '#FF6B6B' }
                 ];
               }
             }
