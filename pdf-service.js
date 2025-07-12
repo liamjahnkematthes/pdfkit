@@ -694,11 +694,11 @@ async function renderPDF(doc, data, projections, charts) {
              width: contentWidth - 30, 
              lineGap: 2 
            });
-  yPos += insightHeight + 35; // More spacing before graph
+  yPos += insightHeight + 50; // Increased spacing before graph
   
   // 3. RETIREMENT GRAPH (moved up from timeline position)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Graph', margin, yPos);
-  yPos += 20;
+  yPos += 25;
   
   // Only add the 3-layer retirement graph
   if (charts.retirementGraph) {
@@ -711,7 +711,7 @@ async function renderPDF(doc, data, projections, charts) {
       const chartHeight = chartWidth / 1.75; // Maintain original aspect ratio
       
       doc.image(graphBuffer, margin, yPos, { width: chartWidth, height: chartHeight });
-      yPos += chartHeight + 10;
+      yPos += chartHeight + 15;
     } catch (error) {
       console.log('Could not load retirement graph');
       yPos += 150;
@@ -720,7 +720,7 @@ async function renderPDF(doc, data, projections, charts) {
   
   // 4. PROFESSIONAL TIPS SECTION (on same page, more space now)
   doc.fontSize(16).fillColor('#1e2a45').text('Professional Tips', margin, yPos);
-  yPos += 20;
+  yPos += 25;
   
   const tips = [
     'Save early and often',
@@ -736,7 +736,7 @@ async function renderPDF(doc, data, projections, charts) {
     yPos += 12;
   });
   
-  yPos += 35; // More spacing before footer
+  yPos += 25; // Reduced spacing before footer to keep it on page 1
   
   // Footer with embedded link (moved up to first page)
   const footerText = 'E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services';
