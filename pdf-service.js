@@ -419,6 +419,7 @@ async function generateCharts(projections, data) {
             title: {
               display: false
             },
+            min: Math.min(startingPreTax, startingRoth, startingBrokerage) * 0.9, // Start from 90% of lowest starting value
             ticks: {
               font: {
                 size: 20,  // Much bigger y-axis labels (was 14pt)
@@ -550,25 +551,58 @@ async function renderPDF(doc, data, projections, charts) {
   // Add back Personal Info Table
   let yPos = 130;
   doc.fontSize(16).fillColor('#1e2a45').text('Personal Information', margin, yPos);
-  yPos += 20;
+  yPos += 25;
   
-  // Create client info array
-  const clientInfo = [
-    `Current Age: ${data.age} years old`,
-    `Annual Income: $${parseInt(data.income).toLocaleString()}`,
-    `Current Savings: $${parseInt(data.savings).toLocaleString()}`,
-    `Retirement Goal: Age ${data.retireAge} years`,
-    `Lifestyle Target: ${data.lifestyle ? data.lifestyle.charAt(0).toUpperCase() + data.lifestyle.slice(1) : 'Comfortable'}`
+  // Create table with headers and data
+  const tableData = [
+    ['Name', 'Age', 'Annual Income', 'Retirement Savings', 'Retirement Age', 'Lifestyle Goal'],
+    [data.name || 'Client', data.age.toString(), `$${parseInt(data.income).toLocaleString()}`, `$${parseInt(data.savings).toLocaleString()}`, data.retireAge.toString(), data.lifestyle ? data.lifestyle.charAt(0).toUpperCase() + data.lifestyle.slice(1) : 'Modest']
   ];
   
-  // Display client info
-  doc.fontSize(11).fillColor('#1e2a45');
-  clientInfo.forEach(info => {
-    doc.text(`• ${info}`, margin + 20, yPos, { width: contentWidth - 40 });
-    yPos += 16;
+  // Table styling
+  const tableWidth = contentWidth;
+  const colWidth = tableWidth / 6; // 6 columns
+  const rowHeight = 25;
+  
+  // Draw table
+  tableData.forEach((row, rowIndex) => {
+    const currentY = yPos + (rowIndex * rowHeight);
+    
+    // Draw row background (alternating colors)
+    if (rowIndex === 0) {
+      // Header row - blue background
+      doc.rect(margin, currentY, tableWidth, rowHeight).fillColor('#2a73d2').fill();
+    } else {
+      // Data row - light background
+      doc.rect(margin, currentY, tableWidth, rowHeight).fillColor('#f8f9fa').fill();
+    }
+    
+    // Draw cell borders
+    doc.rect(margin, currentY, tableWidth, rowHeight).strokeColor('#dee2e6').lineWidth(1).stroke();
+    
+    // Draw vertical lines between columns
+    for (let i = 1; i < 6; i++) {
+      const x = margin + (i * colWidth);
+      doc.moveTo(x, currentY).lineTo(x, currentY + rowHeight).strokeColor('#dee2e6').lineWidth(1).stroke();
+    }
+    
+    // Add text to cells
+    row.forEach((cell, colIndex) => {
+      const cellX = margin + (colIndex * colWidth);
+      const fontSize = rowIndex === 0 ? 11 : 10; // Header slightly bigger
+      const fontColor = rowIndex === 0 ? '#ffffff' : '#1e2a45';
+      const fontWeight = rowIndex === 0 ? 'Helvetica-Bold' : 'Helvetica';
+      
+      doc.fontSize(fontSize).font(fontWeight).fillColor(fontColor)
+         .text(cell, cellX + 5, currentY + 7, { 
+           width: colWidth - 10, 
+           align: 'center',
+           ellipsis: true
+         });
+    });
   });
   
-  yPos += 20;
+  yPos += (tableData.length * rowHeight) + 25;
   
   // 2. RETIREMENT INSIGHT BOX (moved down after personal info)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
