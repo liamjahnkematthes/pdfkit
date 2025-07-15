@@ -30,15 +30,16 @@ app.post('/generate-retirement-pdf', async (req, res) => {
     console.log('=== INCOMING DATA ===');
     console.log('Raw request body:', JSON.stringify(formData, null, 2));
     
-    // Process form data
+    // Process form data - handle both direct and nested structures
+    const actualData = formData.body || formData; // Support both { body: {...} } and {...} directly
     const data = {
-      name: formData.name || 'Client',
-      age: parseInt(formData.age) || 30,
-      income: parseInt(formData.income) || 50000,
-      savings: parseInt(formData.savings) || 100000,
-      retireAge: parseInt(formData.retireAge) || 65,
-      lifestyle: formData.lifestyle || 'comfortable',
-      summary: formData.summary || ''
+      name: actualData.name || 'Client',
+      age: parseInt(actualData.age) || 30,
+      income: parseInt(actualData.income) || 50000,
+      savings: parseInt(actualData.savings) || 100000,
+      retireAge: parseInt(actualData.retireAge) || 65,
+      lifestyle: actualData.lifestyle || 'comfortable',
+      summary: actualData.summary || ''
     };
     
     console.log('=== PROCESSED DATA ===');
