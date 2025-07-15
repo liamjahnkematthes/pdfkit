@@ -636,6 +636,22 @@ async function renderPDF(doc, data, projections, charts) {
   
   // PAGE 1 - MAIN ANALYSIS
   
+  // Add vertical blue banner on the right side
+  const bannerWidth = 40;
+  const bannerX = pageWidth - bannerWidth;
+  doc.rect(bannerX, 0, bannerWidth, doc.page.height).fillColor('#1e2a45').fill();
+  
+  // Add rotated company name in the banner
+  doc.save();
+  doc.translate(bannerX + 20, doc.page.height / 2);
+  doc.rotate(-90);
+  doc.fontSize(14).fillColor('#ffffff').font('Helvetica-Bold')
+     .text('E.H. HOWARD WEALTH MANAGEMENT', 0, 0, { align: 'center' });
+  doc.restore();
+  
+  // Adjust content width to account for the banner
+  const adjustedContentWidth = contentWidth - bannerWidth;
+  
   // 1. TOP BRANDING - Logos on both sides + company name and title
   try {
     // Add E.H. Howard logo on LEFT side
@@ -651,12 +667,12 @@ async function renderPDF(doc, data, projections, charts) {
   }
   
   // Center company name
-  doc.fontSize(18).fillColor('#1e2a45').text('E.H. HOWARD WEALTH MANAGEMENT', margin, 40, { align: 'center', width: contentWidth });
+  doc.fontSize(18).fillColor('#1e2a45').text('E.H. HOWARD WEALTH MANAGEMENT', margin, 40, { align: 'center', width: adjustedContentWidth });
   
   // Center title "Retirement Plan"
   doc.fontSize(24)
      .fillColor('#1e2a45')
-     .text('Retirement Plan', margin, 90, { align: 'center', width: contentWidth });
+     .text('Retirement Plan', margin, 90, { align: 'center', width: adjustedContentWidth });
   
   // Add back Personal Info Table (remove title, fix column headers)
   let yPos = 130;
@@ -668,7 +684,7 @@ async function renderPDF(doc, data, projections, charts) {
   ];
   
   // Table styling with taller rows
-  const tableWidth = contentWidth;
+  const tableWidth = adjustedContentWidth;
   const colWidth = tableWidth / 6; // 6 columns
   const rowHeight = 35; // Increased from 25 to 35 for better text fit
   
@@ -718,15 +734,15 @@ async function renderPDF(doc, data, projections, charts) {
   
   // Bordered insight box
   const insightHeight = 70;
-  doc.rect(margin, yPos, contentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
-  doc.rect(margin, yPos, contentWidth, insightHeight).fillColor('#fdfdfd').fill();
+  doc.rect(margin, yPos, adjustedContentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
+  doc.rect(margin, yPos, adjustedContentWidth, insightHeight).fillColor('#fdfdfd').fill();
   
   // Add the AI-generated summary text from data.summary
   doc.fontSize(10)
      .fillColor('#1e2a45')
      .text(data.summary || 'Your personalized retirement insight will appear here...', 
            margin + 15, yPos + 10, { 
-             width: contentWidth - 30, 
+             width: adjustedContentWidth - 30, 
              lineGap: 2 
            });
   yPos += insightHeight + 50; // Increased spacing before graph
@@ -742,7 +758,7 @@ async function renderPDF(doc, data, projections, charts) {
       const graphBuffer = Buffer.from(graphResponse.data);
       
       // Maintain proper aspect ratio (700:400 = 1.75:1)
-      const chartWidth = contentWidth;
+      const chartWidth = adjustedContentWidth;
       const chartHeight = chartWidth / 1.75; // Maintain original aspect ratio
       
       doc.image(graphBuffer, margin, yPos, { width: chartWidth, height: chartHeight });
@@ -767,7 +783,7 @@ async function renderPDF(doc, data, projections, charts) {
   
   doc.fontSize(9).fillColor('#1e2a45');
   tips.forEach(tip => {
-    doc.text(`• ${tip}`, margin + 20, yPos, { width: contentWidth - 40, continued: false });
+    doc.text(`• ${tip}`, margin + 20, yPos, { width: adjustedContentWidth - 40, continued: false });
     yPos += 12;
   });
   
@@ -777,11 +793,23 @@ async function renderPDF(doc, data, projections, charts) {
   const footerText = 'E.H. HOWARD WEALTH MANAGEMENT | Professional Retirement Planning Services';
   doc.fontSize(8)
      .fillColor('#666666')
-     .text(footerText, margin, yPos, { align: 'center', width: contentWidth });
-  doc.link(margin, yPos, contentWidth, 15, 'https://ehhowardwealth.com');
+     .text(footerText, margin, yPos, { align: 'center', width: adjustedContentWidth });
+  doc.link(margin, yPos, adjustedContentWidth, 15, 'https://ehhowardwealth.com');
   
   // PAGE 2 - RETIREMENT TIMELINE (moved from page 1)
   doc.addPage();
+  
+  // Add vertical blue banner on page 2 as well
+  doc.rect(bannerX, 0, bannerWidth, doc.page.height).fillColor('#1e2a45').fill();
+  
+  // Add rotated company name in the banner on page 2
+  doc.save();
+  doc.translate(bannerX + 20, doc.page.height / 2);
+  doc.rotate(-90);
+  doc.fontSize(14).fillColor('#ffffff').font('Helvetica-Bold')
+     .text('E.H. HOWARD WEALTH MANAGEMENT', 0, 0, { align: 'center' });
+  doc.restore();
+  
   yPos = margin;
   
   // 5. RETIREMENT TIMELINE (now on page 2)
@@ -791,7 +819,7 @@ async function renderPDF(doc, data, projections, charts) {
   // Draw timeline with 4 phases - Fixed spacing
   const timelineY = yPos;
   const timelineStart = margin + 15;
-  const timelineEnd = pageWidth - margin - 15;
+  const timelineEnd = pageWidth - margin - bannerWidth - 15; // Account for banner
   const timelineWidth = timelineEnd - timelineStart;
   const phaseWidth = timelineWidth / 3; // Divide by 3 to get 4 points
   
