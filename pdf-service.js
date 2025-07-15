@@ -190,8 +190,8 @@ async function generateCharts(projections, data) {
             data: brokerageData,
             backgroundColor: 'rgba(156, 39, 176, 0.6)',  // Purple (Brokerage color from example)
             borderColor: 'rgba(156, 39, 176, 1)', 
-            fill: true,
-            tension: 0.4
+          fill: true,
+          tension: 0.4
           }
         ]
       },
@@ -660,8 +660,8 @@ async function renderPDF(doc, data, projections, charts) {
     const logoWidth = 70; // Increased from 50
     doc.image(logoBuffer, margin, 25, { width: logoWidth });
     
-    // Add E.H. Howard logo on RIGHT side  
-    doc.image(logoBuffer, pageWidth - margin - logoWidth, 25, { width: logoWidth });
+    // Add E.H. Howard logo on RIGHT side (adjusted for banner spacing)
+    doc.image(logoBuffer, pageWidth - bannerWidth - margin - logoWidth, 25, { width: logoWidth });
   } catch (error) {
     console.log('Could not load logo');
   }
@@ -730,8 +730,8 @@ async function renderPDF(doc, data, projections, charts) {
   
   // 2. RETIREMENT INSIGHT BOX (moved down after personal info)
   doc.fontSize(16).fillColor('#1e2a45').text('Retirement Insight', margin, yPos);
-  yPos += 20;
-  
+      yPos += 20;
+      
   // Bordered insight box
   const insightHeight = 70;
   doc.rect(margin, yPos, adjustedContentWidth, insightHeight).strokeColor('#e0e7ff').lineWidth(1).stroke();
