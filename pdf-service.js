@@ -26,6 +26,10 @@ app.post('/generate-retirement-pdf', async (req, res) => {
   try {
     const formData = req.body;
     
+    // Debug logging
+    console.log('=== INCOMING DATA ===');
+    console.log('Raw request body:', JSON.stringify(formData, null, 2));
+    
     // Process form data
     const data = {
       name: formData.name || 'Client',
@@ -36,6 +40,9 @@ app.post('/generate-retirement-pdf', async (req, res) => {
       lifestyle: formData.lifestyle || 'comfortable',
       summary: formData.summary || ''
     };
+    
+    console.log('=== PROCESSED DATA ===');
+    console.log('Processed data:', JSON.stringify(data, null, 2));
 
     // Calculate projections
     const projections = calculateProjections(data);
