@@ -602,7 +602,7 @@ async function createPDF(data, projections, charts) {
     try {
       const doc = new PDFDocument({ 
         size: 'A4', 
-        margin: 40,
+        margin: 30,
         info: {
           Title: `Retirement Analysis - ${data.name}`,
           Author: 'E.H. Howard Wealth Management',
@@ -631,7 +631,7 @@ async function createPDF(data, projections, charts) {
  */
 async function renderPDF(doc, data, projections, charts) {
   const pageWidth = doc.page.width;
-  const margin = 72; // 1 inch margins
+  const margin = 30; // Narrower margins - 0.42 inches
   const contentWidth = pageWidth - (margin * 2);
   
   // PAGE 1 - MAIN ANALYSIS
@@ -790,8 +790,8 @@ async function renderPDF(doc, data, projections, charts) {
   
   // Draw timeline with 4 phases - Fixed spacing
   const timelineY = yPos;
-  const timelineStart = margin + 20;
-  const timelineEnd = pageWidth - margin - 20;
+  const timelineStart = margin + 15;
+  const timelineEnd = pageWidth - margin - 15;
   const timelineWidth = timelineEnd - timelineStart;
   const phaseWidth = timelineWidth / 3; // Divide by 3 to get 4 points
   
