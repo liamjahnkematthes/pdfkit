@@ -26,12 +26,24 @@ app.post('/generate-retirement-pdf', async (req, res) => {
   try {
     const formData = req.body;
     
-    // Debug logging
-    console.log('=== INCOMING DATA ===');
+    // Enhanced debug logging
+    console.log('=== INCOMING DATA DEBUG ===');
     console.log('Raw request body:', JSON.stringify(formData, null, 2));
+    console.log('Type of formData:', typeof formData);
+    console.log('formData keys:', Object.keys(formData || {}));
+    console.log('formData.body exists:', !!formData.body);
+    console.log('formData.body keys:', Object.keys(formData.body || {}));
     
     // Process form data - handle both direct and nested structures
     const actualData = formData.body || formData; // Support both { body: {...} } and {...} directly
+    console.log('=== EXTRACTED DATA ===');
+    console.log('actualData:', JSON.stringify(actualData, null, 2));
+    console.log('actualData keys:', Object.keys(actualData || {}));
+    console.log('Raw field values:');
+    console.log('  actualData.name:', actualData.name, typeof actualData.name);
+    console.log('  actualData.age:', actualData.age, typeof actualData.age);
+    console.log('  actualData.income:', actualData.income, typeof actualData.income);
+    console.log('  actualData.savings:', actualData.savings, typeof actualData.savings);
     const data = {
       name: actualData.name || 'Client',
       age: parseInt(actualData.age) || 30,
