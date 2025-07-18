@@ -11,7 +11,11 @@ const path = require('path');
 const app = express();
 const PORT = 3001;
 
-app.use(express.json({ limit: '10mb' }));
+// Handle both standard and n8n's non-standard JSON content types
+app.use(express.json({ 
+  limit: '10mb',
+  type: ['application/json', 'JSON', 'json', 'text/json']
+}));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type');
