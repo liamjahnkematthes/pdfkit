@@ -20,10 +20,48 @@ app.use((req, res, next) => {
 });
 
 /**
+ * Debug endpoint to capture ALL request details
+ */
+app.all('/debug-request', (req, res) => {
+  console.log('\n=== COMPLETE REQUEST DEBUG ===');
+  console.log('Method:', req.method);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Query params:', JSON.stringify(req.query, null, 2));
+  console.log('Raw body:', JSON.stringify(req.body, null, 2));
+  console.log('Body type:', typeof req.body);
+  console.log('Body keys:', Object.keys(req.body || {}));
+  console.log('Content-Type:', req.get('Content-Type'));
+  console.log('Content-Length:', req.get('Content-Length'));
+  console.log('Raw URL:', req.url);
+  console.log('Original URL:', req.originalUrl);
+  console.log('================================\n');
+  
+  res.json({
+    success: true,
+    method: req.method,
+    headers: req.headers,
+    query: req.query,
+    body: req.body,
+    contentType: req.get('Content-Type'),
+    contentLength: req.get('Content-Length'),
+    message: 'Request logged successfully'
+  });
+});
+
+/**
  * Generate Professional Retirement PDF - Enhanced Single Page
  */
 app.post('/generate-retirement-pdf', async (req, res) => {
   try {
+    console.log('\n=== FULL REQUEST ANALYSIS ===');
+    console.log('HTTP Method:', req.method);
+    console.log('Content-Type Header:', req.get('Content-Type'));
+    console.log('Content-Length Header:', req.get('Content-Length'));
+    console.log('All Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Query Params:', JSON.stringify(req.query, null, 2));
+    console.log('Request URL:', req.url);
+    console.log('================================');
+    
     const formData = req.body;
     
     // Enhanced debug logging
@@ -31,6 +69,7 @@ app.post('/generate-retirement-pdf', async (req, res) => {
     console.log('Raw request body:', JSON.stringify(formData, null, 2));
     console.log('Type of formData:', typeof formData);
     console.log('formData keys:', Object.keys(formData || {}));
+    console.log('formData is empty?', Object.keys(formData || {}).length === 0);
     console.log('formData.body exists:', !!formData.body);
     console.log('formData.body keys:', Object.keys(formData.body || {}));
     
